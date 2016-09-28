@@ -1,3 +1,7 @@
+/*
+ * Copyright 2016 Setin S.A.
+*/
+
 #include <nnsimple.h>
 #include <ctime>
 
