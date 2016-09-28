@@ -2,7 +2,8 @@
 #include <math.h>
 #include <fstream>
 
-enum Correct_Rule {CR_DELTA, CR_SIGMA};
+enum Activate_Function {AF_THRESH, AF_SIGMA};
+//const double M_E=2.718281828459;
 
 /*!
     Simple artificial neural network
@@ -12,23 +13,33 @@ enum Correct_Rule {CR_DELTA, CR_SIGMA};
     x - input signal vector
     y - output signal vector
     n - speed of teaching
-    rule - how we do correction of weights and what activate function we use
+    e - inaccuracy
+    s - border of significance
+    afunction - activate function
 */
 class NNSimple{
     double **w;
     double *x;
     double *y;
-    int    sizex, sizey;
-    int    n;
-    Correct_Rule rule;
+    double e;
+    double s;
+    int sizex, sizey;
+    double n;
+    Activate_Function afunction;
     void CorrectWeight(int j,double d);
     double AFunction(double nsum);
     int    MaxY();
     double MaxYVal();
+    void TeachThresh(double **voc, int stepscount);
+    void TeachSigma(double **voc, int stepscount);
+    void Init();
+    void Clear();
 public:
-    NNSimple(int xsize,int ysize, Correct_Rule nrule=CR_DELTA);
+    NNSimple(Activate_Function nfunce=AF_THRESH);
     ~NNSimple();
     int Process(double *inputx);
-    void PrintY();
+    void PrintY(int precision=10);
+    void SetE(double ne);
+    void SetN(double nn);
     void Teach(const char *filename, int stepscount);
 };
