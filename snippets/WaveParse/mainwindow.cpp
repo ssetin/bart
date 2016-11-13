@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QFileDialog>
+#include <QDesktopWidget>
 #include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -17,6 +18,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->toolBar->addAction(QPixmap("icons/play_blue_button.png"), "Play", this, SLOT(on_play()));
     ui->graphicsView->SetZoomLabel(ui->lZoom);
     ui->graphicsView->SetPositionLabel(ui->lPosition);
+
+    move(qApp->desktop()->availableGeometry(this).center()-rect().center());
+
+
 
 }
 

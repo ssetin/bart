@@ -24,6 +24,7 @@ QMyWaveView::~QMyWaveView()
 
 
 bool QMyWaveView::eventFilter(QObject *obj, QEvent *event) {
+  if (obj==this)
   if (event->type() == QEvent::Wheel) {
      handleWheelOnGraphicsScene(static_cast<QWheelEvent*> (event));
      return true;
@@ -81,6 +82,9 @@ void QMyWaveView::SetPositionLabel(QLabel *l){
 
 void QMyWaveView::SetCursor(float newpos){
     CurrentPosition=newpos;
+    if(poslabel){
+        poslabel->setText("Position: "+QString::number((int)CurrentPosition)+" : "+QString::fromStdString(snd->SampleNoToTime((int)CurrentPosition).ToStr() )) ;
+    }
     Draw();
 }
 
@@ -95,14 +99,10 @@ void QMyWaveView::mousePressEvent(QMouseEvent * e)
     if ( rect().contains( remapped ) )
     {
          QPointF mousePoint = mapToScene( remapped );
-         CurrentPosition=1.0*mousePoint.rx()/Zoom;
-         Draw();
+         SetCursor(1.0*mousePoint.rx()/Zoom);
     }
 }
 
-void QMyWaveView::showEvent(QShowEvent *event){
-    //Draw();
-}
 
 void QMyWaveView::Draw(){
     scene->clear();
@@ -128,16 +128,9 @@ void QMyWaveView::Draw(){
 
     }
 
-    if(snd && snd->SamplesCount() )
-    if(snd->Header()->byteRate>0)
-        qDebug()<<"Position: "<<CurrentPosition;
-
     //cursor
     if(Size>0){
-        scene->addLine(CurrentPosition*Zoom,-height()/2+10,CurrentPosition*Zoom,height()/2-10, bpen);
-        if(poslabel){
-            poslabel->setText("Position: "+QString::fromStdString(snd->SampleNoToTime((int)CurrentPosition).ToStr() )) ;
-        }
+        scene->addLine(CurrentPosition*Zoom,-height()/2+10,CurrentPosition*Zoom,height()/2-10, bpen);        
     }
 
     //axis
@@ -149,7 +142,7 @@ void QMyWaveView::Draw(){
         scene->addRect(0,-height()/2+10,Size*Zoom,20,bpen, QBrush(Qt::gray));
         for(int i=0;i<Zoom*Size;i+=200){
             scene->addLine(i,-height()/2+10,i,-height()/2+25,bpen);
-            QGraphicsTextItem *atext=scene->addText(QString::number(i));
+            QGraphicsTextItem *atext=scene->addText(QString::number((int)(i/Zoom)));
             atext->setPos(i,-height()/2+10);
         }
     }

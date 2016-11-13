@@ -36,7 +36,6 @@ protected:
     float Zoom;
     int   Size;
     CCharSound *snd;
-    virtual void showEvent(QShowEvent *event);
 };
 
 #endif // QMYWAVEVIEW_H
