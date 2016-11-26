@@ -8,9 +8,6 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-    audio=NULL;
-    ba=NULL;
-    dev=NULL;
     ui->setupUi(this);    
     ui->statusBar->addWidget(ui->lZoom);
     ui->statusBar->addWidget(ui->lPosition);
@@ -27,12 +24,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
-    if(audio)
-        delete audio;
-    if(ba)
-        delete ba;
-    if(dev)
-        delete dev;
     delete ui;
 }
 
@@ -55,15 +46,12 @@ void MainWindow::on_actionOpen_triggered()
             }
 
             ui->graphicsView->AssignWave(&snd);
-
-            format.setSampleRate(snd.Header()->sampleRate);
-            format.setChannelCount(snd.Header()->numChannels);
-            format.setSampleSize(snd.Header()->bitsPerSample);
-            format.setCodec("audio/pcm");
+            audio.Init(&snd,ui->graphicsView);
 
 
        }else{
            ui->Log->append("Error opening file "+fileName+"\n"+snd.GetLastError());
+           ui->graphicsView->Draw();
        }
    }
 }
@@ -74,35 +62,8 @@ void MainWindow::on_actionExit_triggered()
     exit(0);
 }
 
-void serialize(int* ar, int ar_size, QByteArray *result)
-{
-    QDataStream stream(result, QIODevice::WriteOnly);
-    stream<<ar_size;
-
-    for (int i=0; i<ar_size; i++)
-        stream<<ar[i];
-}
-
-
-void MainWindow::processaudio(){
-    ui->graphicsView->SetCursor(snd.Header()->byteRate/10);
-    ui->graphicsView->Draw();
-}
-
 void MainWindow::on_play()
 {
-    ba = new QByteArray(snd.Size(),0);
-
-    dev=new QBuffer();
-    dev->setBuffer(ba);
-    dev->open(QBuffer::ReadOnly);
-
-    ba->replace(0,snd.Size() ,snd.Data());
-    dev->seek(0);
-
-    audio = new QAudioOutput(format, this);
-    audio->setNotifyInterval(100);
-    connect(audio, SIGNAL(notify()), this, SLOT(processaudio()));
-
-    audio->start(dev);
+    audio.Play();
+    //
 }

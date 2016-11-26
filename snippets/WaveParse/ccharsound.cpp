@@ -40,6 +40,9 @@ CCharSound::CCharSound()
 {    
     data=NULL;
     iSamplesCount=0;
+    iPeak=0;
+    bSigned=false;
+    ibytesPerSample=0;
 }
 
 CCharSound::~CCharSound()
@@ -70,8 +73,16 @@ char* CCharSound::GetLastError(){
 
 float CCharSound::SampleNoToSecond(unsigned int n){
     if(header.byteRate>0)
-        return 1.0*n/header.byteRate;
+        return 1.0*header.blockAlign*n/header.byteRate;
     else return 0;
+}
+
+int CCharSound::Peak(){
+    return iPeak;
+}
+
+bool CCharSound::IsSigned(){
+    return bSigned;
 }
 
 
@@ -79,14 +90,34 @@ CWaveTimer CCharSound::SampleNoToTime(unsigned int n){
     return CWaveTimer((int)(SampleNoToSecond(n)*1000));
 }
 
+
+int CCharSound::SampleToVal(CWaveSample &s){
+    switch(header.bitsPerSample){
+        case 8:
+            return s.sample8;
+        case 16:
+            return s.sample16;
+        case 24:
+            return s.sample24;
+        case 32:
+            return s.sample32;
+        default:
+            return s.sample16;
+    }
+}
+
 int CCharSound::Data(unsigned int i){
     if(data==NULL) return 0;
     CWaveSample amp;
-    memcpy((void*)&amp.data[0],(const void*)&data[i*(header.bitsPerSample/8)*header.numChannels],header.bitsPerSample/8);
-    if(header.bitsPerSample==8)
-        return amp.sample-128;
+    memcpy((void*)&amp.data[0],(void*)&data[i*ibytesPerSample*header.numChannels],ibytesPerSample);
+    if(bSigned)
+        return SampleToVal(amp);
     else
-        return amp.sample;
+        return SampleToVal(amp)-(iPeak/2);
+}
+
+char* CCharSound::Data(){
+    return data;
 }
 
 bool CCharSound::LoadFromFile(const char* filename){
@@ -96,8 +127,17 @@ bool CCharSound::LoadFromFile(const char* filename){
         strcpy(lasterror,"Can't load file");
         return false;
     }
+
+    if(data)
+        delete[] data;
+    data=NULL;
+    iSamplesCount=0;
+    iPeak=0;
+
     size_t aread(0);
     aread=fread((void*)&header, sizeof(WAVHEADER), 1, file);
+
+
     if(aread!=1){
         strcpy(lasterror,"Can't read wave header");
         fclose(file);
@@ -114,18 +154,53 @@ bool CCharSound::LoadFromFile(const char* filename){
         fclose(file);
         return false;
     }
+    if(memcmp(header.subchunk1Id,"fmt ",4)!=0){
+        strcpy(lasterror,"Wrong file format (fmt )");
+        fclose(file);
+        return false;
+    }
+    if(memcmp(header.subchunk2Id,"data",4)!=0){
+        strcpy(lasterror,"Wrong file format (data section)");
+        fclose(file);
+        return false;
+    }
+    if(header.audioFormat!=1){
+        strcpy(lasterror,"Wrong audio format. Support only PCM");
+        fclose(file);
+        return false;
+    }
 
-    iSamplesCount=header.subchunk2Size/(header.bitsPerSample / 8);
+    ibytesPerSample=header.bitsPerSample / 8;
+
+    iSamplesCount=header.subchunk2Size/ibytesPerSample;
     data=new char[header.subchunk2Size];
-    fread((void*)data, 1, header.subchunk2Size, file);
-    //samples=new CWaveSample[iSamplesCount];
-    /*for(int i=0;i<header.subchunk2Size;i+=(header.bitsPerSample / 8)){
-        aread=fread((void*)samples[i].data,(header.bitsPerSample / 8), 1 , file);
-    }*/
-
+    aread=fread((void*)data, 1, header.subchunk2Size, file);
+    if(aread!=header.subchunk2Size){
+        strcpy(lasterror,"Can't read whole data section");
+        fclose(file);
+        return false;
+    }
     fclose(file);
 
-    fDuration=1.0 * header.subchunk2Size / (header.bitsPerSample / 8) / header.numChannels / header.sampleRate;
+    CWaveSample amp;
+    bSigned=false;
+    if(header.bitsPerSample>8){
+        for(int i=0;i<iSamplesCount;i++){
+            amp.sample32=0;
+            memcpy((void*)&amp.data[0],(void*)&data[i*ibytesPerSample*header.numChannels],ibytesPerSample);
+            if(SampleToVal(amp)<0){
+                bSigned=true;
+                break;
+            }
+        }
+    }
+
+    iPeak=pow(2,header.bitsPerSample);
+
+    fDuration=1.0 * header.subchunk2Size / ibytesPerSample / header.numChannels / header.sampleRate;
+
+    qDebug()<<"SubCh1Size="<<header.subchunk1Size<<" SizeofHeader="<<sizeof(WAVHEADER)<<" SamplesCount="<<iSamplesCount<<" subchunk2="<<header.subchunk2Size;
+    qDebug()<<"sizeof(sample)"<<sizeof(CWaveSample)<<"peak: "<<iPeak<<" signed: "<<bSigned<<"Bits per sample:"<<header.bitsPerSample;
 
     return true;
 }

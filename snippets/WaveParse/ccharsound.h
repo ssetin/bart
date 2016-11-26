@@ -9,6 +9,7 @@
 
 #include<string>
 
+
 using namespace std;
 
 /*
@@ -34,10 +35,15 @@ struct WAVHEADER
 /*
     Union for byte<->int value convertations
 */
+#pragma pack(push, 1)
 union CWaveSample{
     char data[4];
-    int  sample{0};
+    unsigned short sample8:8;
+    short sample16:16;
+    int   sample24:24;
+    int   sample32:32;
 };
+#pragma pack(pop)
 
 /*
     CWaveTimer class
@@ -63,19 +69,25 @@ class CCharSound
     WAVHEADER header;
     float  fDuration;
     int    iSamplesCount;
+    bool   bSigned;
+    int    iPeak;
+    int    ibytesPerSample;
     char   lasterror[64];
     char*  data;
+    int SampleToVal(CWaveSample &s);
 public:
     CCharSound();
     ~CCharSound();
     bool LoadFromFile(const char* filename);
     char* GetLastError();
     int Data(unsigned int i);
-    char* Data(){return data;}
+    char* Data();
     WAVHEADER* Header();
     float Duration();
     int SamplesCount();
     int Size();
+    int Peak();
+    bool IsSigned();
     float SampleNoToSecond(unsigned int n);
     CWaveTimer SampleNoToTime(unsigned int n);
 };

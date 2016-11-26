@@ -3,9 +3,7 @@
 
 #include <QMainWindow>
 #include "ccharsound.h"
-#include <QAudioOutput>
-#include <QBuffer>
-
+#include "caudiocontroller.h"
 
 namespace Ui {
 class MainWindow;
@@ -16,20 +14,16 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 public:
     CCharSound snd;
-    QAudioOutput *audio;
-    QAudioFormat format;
+    CAudioController audio;
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 private slots:
     void on_actionOpen_triggered();
     void on_actionExit_triggered();
     void on_play();
-    void processaudio();
 public slots:
 
 private:
-    QByteArray *ba;
-    QBuffer *dev;
     Ui::MainWindow *ui;
 };
 

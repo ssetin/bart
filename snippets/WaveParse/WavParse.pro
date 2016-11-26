@@ -16,11 +16,13 @@ CONFIG += c++11
 SOURCES += main.cpp\
         mainwindow.cpp \
     ccharsound.cpp \
-    qmywaveview.cpp
+    qmywaveview.cpp \
+    caudiocontroller.cpp
 
 HEADERS  += mainwindow.h \
     ccharsound.h \
-    qmywaveview.h
+    qmywaveview.h \
+    caudiocontroller.h
 
 FORMS    += mainwindow.ui
 

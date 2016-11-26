@@ -13,17 +13,19 @@
 
 class QMyWaveView: public QGraphicsView
 {
-    //Q_OBJECT
+    Q_OBJECT
+
     QGraphicsScene *scene;
     QLabel *zoomlabel;
     QLabel *poslabel;
     bool eventFilter(QObject *obj, QEvent *event);
     void handleWheelOnGraphicsScene(QWheelEvent* scrollevent);
 public:
-    QMyWaveView(QWidget *parent=0);
+    QMyWaveView(QWidget *parent=NULL);
     virtual ~QMyWaveView();
     void AssignWave(CCharSound *newsnd);
     void SetCursor(float newpos);
+    void IncCursor(float add);
     void SetZoom(float newzoom);
     void SetZoomLabel(QLabel *l);
     void SetPositionLabel(QLabel *l);
