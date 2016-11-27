@@ -103,7 +103,7 @@
         <item row="0" column="0">
          <widget class="QMyWaveView" name="graphicsView">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <sizepolicy hsizetype="Ignored" vsizetype="Expanding">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -119,6 +119,12 @@
           </property>
           <property name="lineWidth">
            <number>1</number>
+          </property>
+          <property name="verticalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
+          </property>
+          <property name="sizeAdjustPolicy">
+           <enum>QAbstractScrollArea::AdjustToContents</enum>
           </property>
           <property name="backgroundBrush">
            <brush brushstyle="NoBrush">
@@ -137,6 +143,9 @@
           </property>
           <property name="viewportUpdateMode">
            <enum>QGraphicsView::SmartViewportUpdate</enum>
+          </property>
+          <property name="optimizationFlags">
+           <set>QGraphicsView::DontClipPainter</set>
           </property>
          </widget>
         </item>

@@ -1,5 +1,9 @@
 #include "qmywaveview.h"
-#include<QDebug>
+#include <QDebug>
+
+
+
+/*------------------------------*/
 
 QMyWaveView::QMyWaveView(QWidget *parent): QGraphicsView(parent){
     CurrentPosition=0;
@@ -9,17 +13,25 @@ QMyWaveView::QMyWaveView(QWidget *parent): QGraphicsView(parent){
     poslabel=NULL;
     scene=NULL;
     snd=NULL;    
+    lCursor=NULL;
+    tFrameNumbers=NULL;
+    rBar=NULL;
+    lAxises=NULL;
+    lWaves=NULL;
+
     scene = new QGraphicsScene;
     scene->setBackgroundBrush(QBrush(Qt::black));
-    setScene(scene);
-    Draw();
+    setScene(scene);    
     installEventFilter(this);
+
+    Draw();
 }
 
 QMyWaveView::~QMyWaveView()
 {
-    if(scene)
+    if(scene){
         delete scene;
+    }
 }
 
 
@@ -35,20 +47,21 @@ bool QMyWaveView::eventFilter(QObject *obj, QEvent *event) {
 void QMyWaveView::handleWheelOnGraphicsScene(QWheelEvent* scrollevent)
 {
     float prezoom(Zoom);
-    Zoom+=0.01*(float)scrollevent->delta();
+    Zoom+=0.0001*(float)scrollevent->angleDelta().y();
     if(Zoom<(float)width()/(float)Size)
-        Zoom=prezoom;
+        Zoom=(float)width()/(float)Size;
     if(Zoom>10)
         Zoom=10;
 
-    Draw();
-
+    Draw(true);
 
     QPointF remapped = mapToScene(scrollevent->pos());
     centerOn(remapped.x()*Zoom/prezoom,0);
 
     if(zoomlabel)
         zoomlabel->setText("Zoom: "+QString::number(Zoom,10,2));
+
+    scrollevent->accept();
 }
 
 
@@ -62,6 +75,7 @@ void QMyWaveView::AssignWave(CCharSound *newsnd){
     Zoom=(float)width()/(float)Size;
 
     qDebug()<<" Size: "<<Size<<" Zoom: "<<QString::number(Zoom,10,2)<<" Width: "<<width();
+
     Draw();
 
     if(zoomlabel)
@@ -85,8 +99,9 @@ void QMyWaveView::SetCursor(float newpos){
     CurrentPosition=newpos;
     if(poslabel){
         poslabel->setText("Position: "+QString::number((int)CurrentPosition)+" : "+QString::fromStdString(snd->SampleNoToTime((int)CurrentPosition).ToStr() )) ;
-    }
-    Draw();
+    }    
+    lCursor->setLine(CurrentPosition*Zoom,-height()/2+10,CurrentPosition*Zoom,height()/2-10);
+    Draw(false);
 }
 
 void QMyWaveView::IncCursor(float add){
@@ -98,7 +113,8 @@ void QMyWaveView::IncCursor(float add){
     if(poslabel){
         poslabel->setText("Position: "+QString::number((int)CurrentPosition)+" : "+QString::fromStdString(snd->SampleNoToTime((int)CurrentPosition).ToStr() )) ;
     }
-    Draw();
+    lCursor->setLine(CurrentPosition*Zoom,-height()/2+10,CurrentPosition*Zoom,height()/2-10);
+    Draw(false);
 }
 
 void QMyWaveView::SetZoom(float newzoom){
@@ -117,58 +133,66 @@ void QMyWaveView::mousePressEvent(QMouseEvent * e)
     }
 }
 
-
-void QMyWaveView::Draw(){
-    scene->clear();
-
+void QMyWaveView::Draw(bool redraw){
     const float dpy = 0.8;
-
-    QPen pen(Qt::green);
-    QPen bpen(Qt::white);
+    float px(0), py(0), y(0), x(0), scX(0), scY(0), k(0);
     QPen curpen(Qt::blue);
-    QPen axpen(Qt::white);
-    axpen.setStyle(Qt::DashLine);
 
-    float px(0), py(0), y(0), scX(0), scY(0), k(0);
+    if(redraw){
+        QPen pen(Qt::green);
+        QPen bpen(Qt::white);
+        QPen axpen(Qt::white);
+        axpen.setStyle(Qt::DashLine);
 
-    if(snd && snd->SamplesCount()>0){        
-        k=((float)snd->SamplesCount()/width()/2);
-        scY=dpy*height()/snd->Peak();
-        scX=Zoom;
+        scene->clear();
+        int wavescount(0);
 
-        for(float i=0;i<Size*Zoom;i+=scX*k){            
-            y=snd->Data((int)(i/(scX)))*scY;
-            //qDebug()<<(int)i<<". "<<snd->Data((int)i)<<" -> "<<y;
-            scene->addLine(px,py,i,y,pen);
-            px=i;
-            py=y;
+        if(snd && snd->SamplesCount()>0){
+            k=((float)snd->SamplesCount()/width()/16);
+            scY=dpy*height()/snd->Peak();
+            scX=Zoom;
+
+            wavescount=Size*Zoom/(scX*k)-1;
+            lWaves=new QGraphicsLineItem*[wavescount];
+
+            for(int i=0;i<wavescount;i++){
+                x+=k;
+                y=(float)snd->Data((int)x);
+                lWaves[i]=scene->addLine(px*scX,py*scY,x*scX,y*scY,pen);
+                px=x;
+                py=y;
+            }
         }
 
-    }    
 
-    //axis
-    if(Size>0){
-        scene->addLine(0,0,Zoom*Size,0, axpen);
-        scene->addLine(0,-dpy*height()*0.25,Zoom*Size,-dpy*height()*0.25, axpen);
-        scene->addLine(0, dpy*height()*0.25,Zoom*Size,dpy*height()*0.25, axpen);
-        scene->addLine(0,-dpy*height()*0.5,Zoom*Size,-dpy*height()*0.5, axpen);
-        scene->addLine(0, dpy*height()*0.5,Zoom*Size,dpy*height()*0.5, axpen);
+        if(Size>0){
+           //axis
+           lAxises=new QGraphicsLineItem*[5];
+           lAxises[0]=scene->addLine(0,0,Zoom*Size,0, axpen);
+           lAxises[1]=scene->addLine(0,-dpy*height()*0.25,Zoom*Size,-dpy*height()*0.25, axpen);
+           lAxises[2]=scene->addLine(0, dpy*height()*0.25,Zoom*Size,dpy*height()*0.25, axpen);
+           lAxises[3]=scene->addLine(0,-dpy*height()*0.5,Zoom*Size,-dpy*height()*0.5, axpen);
+           lAxises[4]=scene->addLine(0, dpy*height()*0.5,Zoom*Size,dpy*height()*0.5, axpen);
+
+           //time bar
+           rBar=scene->addRect(0,-height()/2+10,Size*Zoom,20,bpen, QBrush(Qt::gray));
+
+           int fcount=Zoom*Size/200+1;
+           tFrameNumbers=new QGraphicsTextItem*[fcount];
+           lVAxises=new QGraphicsLineItem*[fcount];
+           for(int i=0;i<fcount;i++){
+                lVAxises[i]=scene->addLine(i*200,-height()/2+10,i*200,height()/2-10,axpen);
+                tFrameNumbers[i]=scene->addText(QString::number((int)(i*200/Zoom)));
+                tFrameNumbers[i]->setPos(i*200,-height()/2+10);
+            }
+
+            //cursor
+            lCursor=scene->addLine(CurrentPosition*Zoom,-height()/2+10,CurrentPosition*Zoom,height()/2-10, curpen);
+       }
+
+    }else{
+        if(lCursor)
+            lCursor->update();
     }
 
-    //time bar
-    if(Size>0){
-        scene->addRect(0,-height()/2+10,Size*Zoom,20,bpen, QBrush(Qt::gray));
-        for(int i=0;i<Zoom*Size;i+=200){
-            scene->addLine(i,-height()/2+10,i,height()/2-10,axpen);
-            QGraphicsTextItem *atext=scene->addText(QString::number((int)(i/Zoom)));
-            atext->setPos(i,-height()/2+10);
-        }
-    }
-
-    //cursor
-    if(Size>0){
-        scene->addLine(CurrentPosition*Zoom,-height()/2+10,CurrentPosition*Zoom,height()/2-10, curpen);
-    }
-
-    show();
 }

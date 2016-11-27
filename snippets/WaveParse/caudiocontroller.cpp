@@ -9,7 +9,7 @@ CAudioController::CAudioController(QObject *parent): QObject(parent)
     dev=NULL;
     view=NULL;
     snd=NULL;
-    iNotifyDelay=100;
+    iNotifyDelay=500;
 }
 
 CAudioController::CAudioController(CCharSound *newsnd, QMyWaveView *newview, int NotifyDelay){
@@ -32,7 +32,7 @@ void CAudioController::Init(CCharSound *newsnd, QMyWaveView *newview, int Notify
     format.setSampleRate(snd->Header()->sampleRate);
     format.setChannelCount(snd->Header()->numChannels);
     format.setSampleSize(snd->Header()->bitsPerSample);
-    //format.setByteOrder(QAudioFormat::LittleEndian);
+
     if(snd->IsSigned())
         format.setSampleType(QAudioFormat::SampleType::SignedInt);
     else
@@ -52,6 +52,7 @@ void CAudioController::Init(CCharSound *newsnd, QMyWaveView *newview, int Notify
     audio->setNotifyInterval(iNotifyDelay);
     connect(audio, SIGNAL(notify()), this, SLOT(processaudio()));
     connect(audio, SIGNAL(stateChanged(QAudio::State)), this, SLOT(audioStateChanged(QAudio::State)));
+
 
 }
 
@@ -106,10 +107,8 @@ void CAudioController::audioStateChanged(QAudio::State newstate)
 
 
 void CAudioController::processaudio(){
-    if(view){
-        //view->IncCursor((float)snd->Header()->byteRate*iNotifyDelay/1000);
-        view->SetCursor(dev->pos());
-        //qDebug()<<"processaudio()";
+    if(view){        
+        view->SetCursor(dev->pos()/(snd->Header()->bitsPerSample/8));
     }
 }
 

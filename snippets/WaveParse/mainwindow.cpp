@@ -13,6 +13,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->statusBar->addWidget(ui->lPosition);
 
     ui->toolBar->addAction(QPixmap("icons/play_blue_button.png"), "Play", this, SLOT(on_play()));
+    ui->toolBar->addAction(QPixmap("icons/pause_blue_button.png"), "Pause", this, SLOT(on_pause()));
+    //ui->toolBar->addAction(QPixmap("icons/stop_blue_button.png"), "Stop", this, SLOT(on_stop()));
+
     ui->graphicsView->SetZoomLabel(ui->lZoom);
     ui->graphicsView->SetPositionLabel(ui->lPosition);
 
@@ -65,5 +68,11 @@ void MainWindow::on_actionExit_triggered()
 void MainWindow::on_play()
 {
     audio.Play();
+    //
+}
+
+void MainWindow::on_pause()
+{
+    audio.Pause();
     //
 }

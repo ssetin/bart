@@ -8,6 +8,7 @@
 #include <QGraphicsTextItem>
 #include <QMouseEvent>
 #include <QWheelEvent>
+#include <vector>
 #include <QGraphicsSceneWheelEvent>
 #include "ccharsound.h"
 
@@ -16,8 +17,16 @@ class QMyWaveView: public QGraphicsView
     Q_OBJECT
 
     QGraphicsScene *scene;
+
+    QGraphicsLineItem *lCursor;
+    QGraphicsTextItem **tFrameNumbers;
+    QGraphicsRectItem *rBar;
+    QGraphicsLineItem **lAxises;
+    QGraphicsLineItem **lVAxises;
+    QGraphicsLineItem **lWaves;
+
     QLabel *zoomlabel;
-    QLabel *poslabel;
+    QLabel *poslabel;        
     bool eventFilter(QObject *obj, QEvent *event);
     void handleWheelOnGraphicsScene(QWheelEvent* scrollevent);
 public:
@@ -29,7 +38,7 @@ public:
     void SetZoom(float newzoom);
     void SetZoomLabel(QLabel *l);
     void SetPositionLabel(QLabel *l);
-    void Draw();
+    void Draw(bool redraw=true);
 signals:
 public slots:
     void mousePressEvent(QMouseEvent * e);
@@ -39,5 +48,6 @@ protected:
     int   Size;
     CCharSound *snd;
 };
+
 
 #endif // QMYWAVEVIEW_H

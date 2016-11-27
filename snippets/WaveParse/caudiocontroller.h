@@ -31,7 +31,7 @@ public:
     virtual ~CAudioController();
 signals:
 public slots:
-    void processaudio();
+    void processaudio();    
     void audioStateChanged(QAudio::State newstate);
 };
 

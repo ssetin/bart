@@ -21,6 +21,7 @@ private slots:
     void on_actionOpen_triggered();
     void on_actionExit_triggered();
     void on_play();
+    void on_pause();
 public slots:
 
 private:
