@@ -1,9 +1,10 @@
 /*
  * Copyright 2016 Setin S.A.
- * fantasies...
 */
 
 #include"fjson.h"
+
+#define nocheck
 
 using namespace std;
 
@@ -104,16 +105,16 @@ string fjString::asString(bool quotes) const{
     return value;
 }
 
-shared_ptr<fjArray> fjString::asfjArray() const{
-    return nullptr;
+shared_ptr<fjArray> fjString::asfjArray(){
+    return make_shared<fjArray>("["+value+"]");
 }
 
 float fjString::asFloat() const{
     return stof(value);
 }
 
-shared_ptr<fjObject> fjString::asfjObject() const{
-    return nullptr;
+shared_ptr<fjObject> fjString::asfjObject(){
+    return make_shared<fjObject>(value);
 }
 
 int fjString::asInt() const{
@@ -121,7 +122,9 @@ int fjString::asInt() const{
 }
 
 fjString::~fjString(){
+#ifdef check
     cout<<"~fjString("<<value<<")"<<endl;
+#endif
 }
 
 bool fjString::IsArray()const{return false;}
@@ -159,16 +162,16 @@ string fjInt::asString(bool) const{
     return std::to_string(value);
 }
 
-shared_ptr<fjArray> fjInt::asfjArray() const{
-    return nullptr;
+shared_ptr<fjArray> fjInt::asfjArray(){
+    return make_shared<fjArray>("["+to_string(value)+"]");
 }
 
 float fjInt::asFloat() const{
     return (float)value;
 }
 
-shared_ptr<fjObject> fjInt::asfjObject() const{
-    return nullptr;
+shared_ptr<fjObject> fjInt::asfjObject(){
+    return make_shared<fjObject>("{ value: "+std::to_string(value)+"}");
 }
 
 int fjInt::asInt() const{
@@ -176,7 +179,9 @@ int fjInt::asInt() const{
 }
 
 fjInt::~fjInt(){
+#ifdef check
     cout<<"~fjInt("<<value<<")"<<endl;
+#endif
 }
 
 bool fjInt::IsArray()const{return false;}
@@ -214,22 +219,24 @@ string fjFloat::asString(bool) const{
     return std::to_string(value);
 }
 
-shared_ptr<fjArray> fjFloat::asfjArray() const{
-    return nullptr;
+shared_ptr<fjArray> fjFloat::asfjArray(){
+    return make_shared<fjArray>("["+to_string(value)+"]");
 }
 float fjFloat::asFloat() const {
     return value;
 }
 
-shared_ptr<fjObject> fjFloat::asfjObject() const{
-    return nullptr;
+shared_ptr<fjObject> fjFloat::asfjObject(){
+    return make_shared<fjObject>("{ value: "+std::to_string(value)+"}");
 }
 
 int fjFloat::asInt() const{
     return (int)value;
 }
 fjFloat::~fjFloat(){
+#ifdef check
     cout<<"~fjString("<<value<<")"<<endl;
+#endif
 }
 
 bool fjFloat::IsArray()const{return false;}
@@ -239,8 +246,8 @@ size_t fjFloat::Size()const{return 1;}
 /*
     fjObjValue
 */
-fjObjValue::fjObjValue(): fjValue(), value(nullptr){}
-fjObjValue::fjObjValue(const fjObjValue &val): fjValue(){
+fjObjValue::fjObjValue(): value(nullptr){}
+fjObjValue::fjObjValue(const fjObjValue &val){
         value=val.value;
 }
 
@@ -262,6 +269,10 @@ fjObjValue& fjObjValue::operator=(fjObjValue &&a){
     return *this;
 }
 
+shared_ptr<fjValue>& fjObjValue::operator[](string name){
+    return ((fjObject)*value)[name];
+}
+
 string fjObjValue::asString(bool)const{
     string str;
     str="{";
@@ -274,16 +285,19 @@ string fjObjValue::asString(bool)const{
     return str;
 }
 
-shared_ptr<fjArray> fjObjValue::asfjArray()const{
+shared_ptr<fjArray> fjObjValue::asfjArray(){
     return nullptr;
 }
 
 float fjObjValue::asFloat()const{
     return 0;
 }
-shared_ptr<fjObject> fjObjValue::asfjObject()const{
-    return nullptr;
+
+shared_ptr<fjObject> fjObjValue::asfjObject(){
+    return value;
 }
+
+
 
 int fjObjValue::asInt()const{
     return 0;
@@ -291,7 +305,9 @@ int fjObjValue::asInt()const{
 
 
 fjObjValue::~fjObjValue(){
+#ifdef check
     cout<<"~fjObjValue()"<<endl;
+#endif
 }
 
 bool fjObjValue::IsArray()const{return false;}
@@ -303,11 +319,11 @@ size_t fjObjValue::Size()const{return 1;}
 */
 fjArray::fjArray(){}
 
-fjArray::fjArray(const fjArray &val): fjValue(){
+fjArray::fjArray(const fjArray &val): enable_shared_from_this(val){
     value=val.value;
 }
 
-fjArray::fjArray(fjArray &&val): fjValue(){
+fjArray::fjArray(fjArray &&val){
     value=move(val.value);
 }
 
@@ -331,7 +347,9 @@ fjArray& fjArray::operator=(fjArray &&a){
 
 void fjArray::AddValue(string &value){
     eStringIs tp=DetectType(value);
+#ifdef check
     cout<<"AddValue[]("<<value<<")"<<endl;
+#endif
     switch(tp){
         case SI_STRING:            
             Add(value);
@@ -440,16 +458,20 @@ string fjArray::asString(bool quotes) const{
     return "["+res+"]";
 }
 
-shared_ptr<fjArray> fjArray::asfjArray() const{
-    return make_shared<fjArray>(*this);
+shared_ptr<fjArray> fjArray::asfjArray(){
+    return shared_from_this();
 }
 
 float fjArray::asFloat() const{
     return 0;
 }
 
-shared_ptr<fjObject> fjArray::asfjObject() const{
-    return nullptr;
+shared_ptr<fjObject> fjArray::asfjObject(){
+    fjObject obj;
+    for(unsigned int i=0;i<value.size();i++){
+        obj.Set("elem"+std::to_string(i)+": ", (*value.at(i).get()).asString());
+    }
+    return make_shared<fjObject>(obj);
 }
 
 int fjArray::asInt() const{
@@ -458,7 +480,9 @@ int fjArray::asInt() const{
 
 fjArray::~fjArray(){
     Clear();
+#ifdef check
     cout<<"~fjArray("<<asString(true)<<")"<<endl;    
+#endif
 }
 
 bool fjArray::IsArray()const{return true;}
@@ -507,7 +531,9 @@ void fjObject::Init(const string &jsonstring){
 
 void fjObject::AddValue(const string &name, string &value){
     eStringIs tp=DetectType(value);
+#ifdef check
     cout<<"AddValue{}(\""<<name<<"\",\""<<value<<"\")"<<endl;
+#endif
     switch(tp){
         case SI_STRING:
             Set(name, value);
@@ -695,7 +721,7 @@ fjObject::~fjObject(){
 */
 
 ostream& operator<<(ostream& s, const fjValue *t){
-    s<<t->asString(true);
+    s<<t->asString();
     return s;
 }
 

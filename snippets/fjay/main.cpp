@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 
     cout<<"fa="<<fa<<endl<<endl;
     cout<<"js="<<js<<endl;
-    fa.Set("[1,2,\"string\",{} ]");
+    fa.Set("[1,2,\"string\" ]");
     cout<<"new fa="<<fa<<endl<<endl;
 
 
@@ -66,9 +66,15 @@ int main(int argc, char *argv[])
     cout<<"JSON from string"<<endl;
     json.Init("{field1: {name: \"subobj\", value: 100 , subarray: [1, 2 , {name: \"hop-hay\", value: 999} ,4,5.67]\n, fld: \"filename\" } , zo: 1 , field2: \"string field\", file3array: [ 11.3, 1, \"new\"] }");
 
-    json["kukumber"]=make_shared<fjString>("magical");    
+    json["kukumber"]=make_shared<fjString>("first kukumber");
+    json["kukumber"]=make_shared<fjString>("magical");
 
     cout<<"JSON: "<<json<<endl<<endl;
+
+    cout<<"json[field1][name]="<<(*json["field1"]->asfjObject())["name"]<<endl;
+    (*json["field1"]->asfjObject())["name"]=make_shared<fjString>("new subobj");
+    cout<<"json[field1][name]="<<(*json["field1"]->asfjObject())["name"]<<endl;
+
     cout<<"size="<<json.Size()<<endl;
 
     cin.get();

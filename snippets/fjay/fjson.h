@@ -15,6 +15,7 @@
 using namespace std;
 
 class fjObject;
+class fjObjValue;
 class fjArray;
 class fjInt;
 class fjFloat;
@@ -34,9 +35,9 @@ public:
     fjValue(){}
 
     virtual string asString(bool quotes=false)const=0;
-    virtual shared_ptr<fjArray> asfjArray()const=0;
+    virtual shared_ptr<fjArray> asfjArray()=0;
     virtual float asFloat()const=0;
-    virtual shared_ptr<fjObject>asfjObject()const=0;
+    virtual shared_ptr<fjObject> asfjObject()=0;
     virtual int asInt()const=0;
 
     virtual bool IsArray()const=0;
@@ -63,11 +64,12 @@ struct fjPair{
     fjPair()=delete;
     fjPair(string pname, shared_ptr<fjValue> nvalue){
         name=pname;
-        value=nvalue;
+        value=nvalue;        
     }  
     ~fjPair(){        
     }
 };
+
 
 /*
  * fjString - string fj type
@@ -84,9 +86,9 @@ public:
     fjString& operator=(fjString &&a);
 
     virtual string asString(bool quotes=false) const;
-    virtual shared_ptr<fjArray> asfjArray() const;
+    virtual shared_ptr<fjArray> asfjArray();
     virtual float asFloat()const;
-    virtual shared_ptr<fjObject> asfjObject() const;
+    virtual shared_ptr<fjObject> asfjObject();
     virtual int asInt() const;
 
     virtual bool IsArray()const;
@@ -111,9 +113,9 @@ public:
     fjInt& operator=(fjInt &&a);
 
     virtual string asString(bool quotes=false) const;
-    virtual shared_ptr<fjArray> asfjArray() const;
+    virtual shared_ptr<fjArray> asfjArray();
     virtual float asFloat() const;
-    virtual shared_ptr<fjObject> asfjObject() const;
+    virtual shared_ptr<fjObject> asfjObject();
     virtual int asInt() const;
 
     virtual bool IsArray()const;
@@ -138,9 +140,9 @@ public:
     fjFloat& operator=(fjFloat &&a);
 
     virtual string asString(bool quotes=false)const;
-    virtual shared_ptr<fjArray> asfjArray()const;
+    virtual shared_ptr<fjArray> asfjArray();
     virtual float asFloat() const;
-    virtual shared_ptr<fjObject> asfjObject()const;
+    virtual shared_ptr<fjObject> asfjObject();
     virtual int asInt()const;
 
     virtual bool IsArray()const;
@@ -166,11 +168,12 @@ public:
     fjObjValue& operator=(fjObjValue &&a);
 
     virtual string asString(bool quotes=false)const;
-    virtual shared_ptr<fjArray> asfjArray()const;
+    virtual shared_ptr<fjArray> asfjArray();
     virtual float asFloat() const;
-    virtual shared_ptr<fjObject> asfjObject()const;
+    virtual shared_ptr<fjObject> asfjObject();
     virtual int asInt()const;
 
+    shared_ptr<fjValue>& operator[](string name);
     virtual bool IsArray()const;
     virtual bool IsObject()const;
     virtual size_t Size()const;
@@ -183,7 +186,7 @@ public:
 /*
  * fjArray - array of fj values
 */
-class fjArray: public fjValue {
+class fjArray: public fjValue, public enable_shared_from_this<fjArray> {
     vector<shared_ptr<fjValue>> value;
     void AddValue(string &value);
 public:
@@ -204,9 +207,9 @@ public:
     shared_ptr<fjValue>& operator[](unsigned int i);
 
     virtual string asString(bool quotes=false)const;
-    virtual shared_ptr<fjArray> asfjArray()const;
+    virtual shared_ptr<fjArray> asfjArray();
     virtual float asFloat()const;
-    virtual shared_ptr<fjObject> asfjObject()const;
+    virtual shared_ptr<fjObject> asfjObject();
     virtual int asInt()const;
 
     virtual bool IsArray()const;
@@ -251,7 +254,6 @@ public:
 
     virtual  ~fjObject();
 };
-
 
 
 #endif // FJSON_H
