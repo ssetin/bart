@@ -1,6 +1,5 @@
 /*
  * Copyright 2016 Setin S.A.
- * fantasies...
 */
 
 #ifndef FJSON_H
