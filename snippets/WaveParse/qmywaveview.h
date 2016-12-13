@@ -25,6 +25,8 @@ class QMyWaveView: public QGraphicsView
     QGraphicsLineItem **lVAxises;
     QGraphicsLineItem **lWaves;
 
+    QGraphicsLineItem **lIntervals;
+
     QLabel *zoomlabel;
     QLabel *poslabel;        
     bool eventFilter(QObject *obj, QEvent *event);

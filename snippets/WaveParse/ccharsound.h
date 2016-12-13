@@ -60,6 +60,16 @@ public:
     string ToStr();
 };
 
+/*
+    CSoundInterval
+*/
+struct CSoundInterval{
+    unsigned int begin;
+    unsigned int end;
+    char ch;
+    CSoundInterval():begin(-1),end(-1),ch(0){}
+};
+
 
 /*
     CCharSound class
@@ -68,12 +78,15 @@ class CCharSound
 {
     WAVHEADER header;
     float  fDuration;
-    int    iSamplesCount;
+    unsigned int iSamplesCount;
     bool   bSigned;
     int    iPeak;
     int    ibytesPerSample;
     char   lasterror[64];
     char*  data;
+    CSoundInterval* intervals;
+    unsigned int iIntervalsCount;
+    short iVolumeThresh;
     int SampleToVal(CWaveSample &s);
 public:
     CCharSound();
@@ -82,14 +95,17 @@ public:
     char* GetLastError();
     int Data(unsigned int i);
     char* Data();
+    CSoundInterval Interval(unsigned int i);
     WAVHEADER* Header();
     float Duration();
-    int SamplesCount();
-    int Size();
+    unsigned int SamplesCount();
+    unsigned int IntervalsCount();
+    int Size();    
     int Peak();
     bool IsSigned();
     float SampleNoToSecond(unsigned int n);
-    CWaveTimer SampleNoToTime(unsigned int n);
+    CWaveTimer SampleNoToTime(unsigned int n);    
+    void FormIntervals(unsigned int msec);
 };
 
 #endif // CCHARSOUND_H

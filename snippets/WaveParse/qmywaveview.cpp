@@ -18,6 +18,7 @@ QMyWaveView::QMyWaveView(QWidget *parent): QGraphicsView(parent){
     rBar=NULL;
     lAxises=NULL;
     lWaves=NULL;
+    lIntervals=NULL;
 
     scene = new QGraphicsScene;
     scene->setBackgroundBrush(QBrush(Qt::black));
@@ -29,6 +30,7 @@ QMyWaveView::QMyWaveView(QWidget *parent): QGraphicsView(parent){
 
 QMyWaveView::~QMyWaveView()
 {
+    qDebug()<<"~QMyWaveView()";
     if(scene){
         delete scene;
     }
@@ -142,7 +144,9 @@ void QMyWaveView::Draw(bool redraw){
         QPen pen(Qt::green);
         QPen bpen(Qt::white);
         QPen axpen(Qt::white);
+        QPen ixpen(Qt::red);
         axpen.setStyle(Qt::DashLine);
+        ixpen.setStyle(Qt::DashLine);
 
         scene->clear();
         int wavescount(0);
@@ -185,6 +189,16 @@ void QMyWaveView::Draw(bool redraw){
                 tFrameNumbers[i]=scene->addText(QString::number((int)(i*200/Zoom)));
                 tFrameNumbers[i]->setPos(i*200,-height()/2+10);
             }
+
+            //intervals
+           if(snd->IntervalsCount()>0){
+                lIntervals=new QGraphicsLineItem*[snd->IntervalsCount()*2];
+                for(unsigned int i=0;i<snd->IntervalsCount();i++){
+                    lIntervals[2*i]=scene->addLine(snd->Interval(i).begin*Zoom,-height()/2+10,snd->Interval(i).begin*Zoom,height()/2-10, ixpen);
+                    lIntervals[2*i+1]=scene->addLine(snd->Interval(i).end*Zoom,-height()/2+10,snd->Interval(i).end*Zoom,height()/2-10, ixpen);
+                }
+
+           }
 
             //cursor
             lCursor=scene->addLine(CurrentPosition*Zoom,-height()/2+10,CurrentPosition*Zoom,height()/2-10, curpen);

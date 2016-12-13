@@ -39,16 +39,21 @@ string CWaveTimer::ToStr(){
 CCharSound::CCharSound()
 {    
     data=NULL;
+    intervals=NULL;
     iSamplesCount=0;
+    iIntervalsCount=0;
     iPeak=0;
     bSigned=false;
     ibytesPerSample=0;
+    iVolumeThresh=5; //percents
 }
 
 CCharSound::~CCharSound()
 {
     if(data)
-        delete data;
+        delete[] data;
+    if(intervals)
+        delete[] intervals;
 }
 
 WAVHEADER* CCharSound::Header(){
@@ -59,8 +64,12 @@ float CCharSound::Duration(){
     return fDuration;
 }
 
-int CCharSound::SamplesCount(){
+unsigned int CCharSound::SamplesCount(){
     return iSamplesCount;
+}
+
+unsigned int CCharSound::IntervalsCount(){
+    return iIntervalsCount;
 }
 
 int CCharSound:: Size(){
@@ -118,6 +127,42 @@ int CCharSound::Data(unsigned int i){
 
 char* CCharSound::Data(){
     return data;
+}
+CSoundInterval CCharSound::Interval(unsigned int i){
+    if(i<iIntervalsCount)
+        return intervals[i];
+    return CSoundInterval();
+}
+
+void CCharSound::FormIntervals(unsigned int msec){
+    if(data==NULL) return;
+    unsigned int samples=msec*(header.byteRate/ibytesPerSample/header.numChannels)/1000;
+    unsigned int k(0);
+
+    if(this->intervals)
+        delete[] intervals;
+    iIntervalsCount=0;
+
+    for(unsigned int i=0;i<iSamplesCount;i++){
+        if(abs(Data(i))>=0.01*iVolumeThresh*iPeak){
+            i+=samples;
+            iIntervalsCount++;
+        }
+    }
+    if(iIntervalsCount==0) return;
+
+    intervals=new CSoundInterval[iIntervalsCount];
+    for(unsigned int i=0;i<iSamplesCount;i++){
+        if(abs(Data(i))>=0.01*iVolumeThresh*iPeak){
+            intervals[k].begin=i;
+            intervals[k].end=i+samples;
+            i+=samples;
+            k++;
+        }
+    }
+
+    qDebug()<<"Formed "<<iIntervalsCount<<" intervals. Samples count="<<samples;
+
 }
 
 bool CCharSound::LoadFromFile(const char* filename){
@@ -185,7 +230,7 @@ bool CCharSound::LoadFromFile(const char* filename){
     CWaveSample amp;
     bSigned=false;
     if(header.bitsPerSample>8){
-        for(int i=0;i<iSamplesCount;i++){
+        for(unsigned int i=0;i<iSamplesCount;i++){
             amp.sample32=0;
             memcpy((void*)&amp.data[0],(void*)&data[i*ibytesPerSample*header.numChannels],ibytesPerSample);
             if(SampleToVal(amp)<0){

@@ -14,7 +14,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->toolBar->addAction(QPixmap("icons/play_blue_button.png"), "Play", this, SLOT(on_play()));
     ui->toolBar->addAction(QPixmap("icons/pause_blue_button.png"), "Pause", this, SLOT(on_pause()));
-    //ui->toolBar->addAction(QPixmap("icons/stop_blue_button.png"), "Stop", this, SLOT(on_stop()));
+    ui->toolBar->addSeparator();
+    ui->toolBar->addWidget(ui->eInterval);
+    ui->toolBar->addAction(QPixmap("icons/time-icon.png"), "Intervals", this, SLOT(on_intervals()));
+    ui->toolBar->addSeparator();
 
     ui->graphicsView->SetZoomLabel(ui->lZoom);
     ui->graphicsView->SetPositionLabel(ui->lPosition);
@@ -63,6 +66,11 @@ void MainWindow::on_actionOpen_triggered()
 void MainWindow::on_actionExit_triggered()
 {
     exit(0);
+}
+
+void MainWindow::on_intervals(){
+    snd.FormIntervals(ui->eInterval->text().toInt());
+    ui->graphicsView->Draw(true);
 }
 
 void MainWindow::on_play()
