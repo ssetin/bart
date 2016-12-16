@@ -3,22 +3,63 @@
 
 
 
+
+/*
+    QGraphicsIntervalItem
+*/
+
+QGraphicsIntervalItem::QGraphicsIntervalItem(QGraphicsItem *parent):QGraphicsRectItem(parent){
+    Init();
+}
+
+QGraphicsIntervalItem::QGraphicsIntervalItem(qreal x, qreal y, qreal width, qreal height, const QPen &pen){
+    Init();
+    setRect(x,y,width,height);
+    setPen(pen);
+}
+
+
+void QGraphicsIntervalItem::Init(){
+    this->setCursor(Qt::PointingHandCursor);
+    setOpacity(0.65);
+    setZValue(1);
+    setFlag(QGraphicsItem::ItemIsSelectable);
+}
+
+QGraphicsIntervalItem::~QGraphicsIntervalItem(){}
+
+void QGraphicsIntervalItem::paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget){
+    if(this->isSelected()){
+        setBrush(QBrush(pen().color()));
+    }else{
+        this->setBrush(QBrush());
+    }
+    QGraphicsRectItem::paint(painter,option,widget);
+}
+
+
+
 /*------------------------------*/
+/*
+    QMyWaveView
+*/
 
 QMyWaveView::QMyWaveView(QWidget *parent): QGraphicsView(parent){
-    CurrentPosition=0;
-    Zoom=1;
-    Size=0;
-    zoomlabel=NULL;
-    poslabel=NULL;
-    scene=NULL;
-    snd=NULL;    
-    lCursor=NULL;
-    tFrameNumbers=NULL;
-    rBar=NULL;
-    lAxises=NULL;
-    lWaves=NULL;
-    lIntervals=NULL;
+    fCurrentPosition=0;
+    fZoom=1;
+    iSize=0;
+    iSelectedInterval=-1;
+    zoomlabel=nullptr;
+    poslabel=nullptr;
+    scene=nullptr;
+    snd=nullptr;
+    lCursor=nullptr;
+    soundcharedit=nullptr;
+    tFrameNumbers=nullptr;
+    rBar=nullptr;
+    lAxises=nullptr;
+    lWaves=nullptr;
+    rIntervals=nullptr;
 
     scene = new QGraphicsScene;
     scene->setBackgroundBrush(QBrush(Qt::black));
@@ -43,48 +84,62 @@ bool QMyWaveView::eventFilter(QObject *obj, QEvent *event) {
      handleWheelOnGraphicsScene(static_cast<QWheelEvent*> (event));
      return true;
   }
+
   return false;
+}
+
+void QMyWaveView::resizeEvent(QResizeEvent *event){    
+    event->accept();
+    //Draw(true);
+    //QRectF r=scene->sceneRect();
+    //r.setHeight(this->height()-20);
+    //scene->setSceneRect(r);
+    //fitInView(r, Qt::KeepAspectRatioByExpanding);
 }
 
 void QMyWaveView::handleWheelOnGraphicsScene(QWheelEvent* scrollevent)
 {
-    float prezoom(Zoom);
-    Zoom+=0.0001*(float)scrollevent->angleDelta().y();
-    if(Zoom<(float)width()/(float)Size)
-        Zoom=(float)width()/(float)Size;
-    if(Zoom>10)
-        Zoom=10;
+    float prezoom(fZoom);
+    fZoom+=0.0001*(float)scrollevent->angleDelta().y();
+    if(fZoom<(float)width()/(float)iSize){
+        fZoom=(float)width()/(float)iSize;
+        return;
+    }
+    if(fZoom>5){
+        fZoom=5;
+        return;
+    }
 
     Draw(true);
 
     QPointF remapped = mapToScene(scrollevent->pos());
-    centerOn(remapped.x()*Zoom/prezoom,0);
+    centerOn(remapped.x()*fZoom/prezoom,0);
 
     if(zoomlabel)
-        zoomlabel->setText("Zoom: "+QString::number(Zoom,10,2));
+        zoomlabel->setText("<b>Zoom:</b> "+QString::number(fZoom,10,2));
 
     scrollevent->accept();
 }
 
 
 void QMyWaveView::AssignWave(CCharSound *newsnd){
-    if(newsnd==NULL){
-        Size=0;
+    if(newsnd==nullptr){
+        iSize=0;
         return;
     }
     snd=newsnd;
-    Size=snd->SamplesCount();
-    Zoom=(float)width()/(float)Size;
+    iSize=snd->SamplesCount();
+    fZoom=(float)width()/(float)iSize;
 
-    qDebug()<<" Size: "<<Size<<" Zoom: "<<QString::number(Zoom,10,2)<<" Width: "<<width();
+    qDebug()<<" Size: "<<iSize<<" Zoom: "<<QString::number(fZoom,10,2)<<" Width: "<<width();
 
     Draw();
 
     if(zoomlabel)
-        zoomlabel->setText("Zoom: "+QString::number(Zoom,10,2));
+        zoomlabel->setText("<b>Zoom:</b> "+QString::number(fZoom,10,2));
 
     if(poslabel)
-        poslabel->setText("Position: 00:00:00.000");
+        poslabel->setText("<b>Position:</b> 00:00:00.000");
 
 
 }
@@ -97,44 +152,100 @@ void QMyWaveView::SetPositionLabel(QLabel *l){
     poslabel=l;
 }
 
+void QMyWaveView::SetSelectionLabel(QLabel *l){
+    selectionlabel=l;
+}
+
+void QMyWaveView::SetSoundCharEdit(QLineEdit *l){
+    soundcharedit=l;
+}
+
 void QMyWaveView::SetCursor(float newpos){
-    CurrentPosition=newpos;
+    fCurrentPosition=newpos;
     if(poslabel){
-        poslabel->setText("Position: "+QString::number((int)CurrentPosition)+" : "+QString::fromStdString(snd->SampleNoToTime((int)CurrentPosition).ToStr() )) ;
+        poslabel->setText("<b>Position:</b> "+QString::number((int)fCurrentPosition)+" : "+QString::fromStdString(snd->SampleNoToTime((int)fCurrentPosition).ToStr() )) ;
     }    
-    lCursor->setLine(CurrentPosition*Zoom,-height()/2+10,CurrentPosition*Zoom,height()/2-10);
+    lCursor->setLine(fCurrentPosition*fZoom,-height()/2+10,fCurrentPosition*fZoom,height()/2-10);
     Draw(false);
 }
 
 void QMyWaveView::IncCursor(float add){
-    if(CurrentPosition+add>(float)snd->SamplesCount()){
-        CurrentPosition=snd->SamplesCount();
+    if(fCurrentPosition+add>(float)snd->SamplesCount()){
+        fCurrentPosition=snd->SamplesCount();
         //return;
     }else
-        CurrentPosition+=add;
+        fCurrentPosition+=add;
     if(poslabel){
-        poslabel->setText("Position: "+QString::number((int)CurrentPosition)+" : "+QString::fromStdString(snd->SampleNoToTime((int)CurrentPosition).ToStr() )) ;
+        poslabel->setText("<b>Position:</b> "+QString::number((int)fCurrentPosition)+" : "+QString::fromStdString(snd->SampleNoToTime((int)fCurrentPosition).ToStr() )) ;
     }
-    lCursor->setLine(CurrentPosition*Zoom,-height()/2+10,CurrentPosition*Zoom,height()/2-10);
+    lCursor->setLine(fCurrentPosition*fZoom,-height()/2+10,fCurrentPosition*fZoom,height()/2-10);
     Draw(false);
 }
 
 void QMyWaveView::SetZoom(float newzoom){
-    Zoom=newzoom;
+    fZoom=newzoom;
     Draw();
 }
 
 void QMyWaveView::mousePressEvent(QMouseEvent * e)
 {
-    if(snd==NULL) return;
-    QPoint remapped = mapFromParent( e->pos() );
-    if ( rect().contains( remapped ) )
-    {
-         QPointF mousePoint = mapToScene( remapped );
-         SetCursor(1.0*mousePoint.rx()/Zoom);
+    if(snd==nullptr) return;
+
+    QPointF mousePoint = mapToScene(e->pos());
+    SetCursor(1.0*mousePoint.rx()/fZoom);
+
+    //find interval
+    QGraphicsItem *item=scene->itemAt(mousePoint, QGraphicsView::transform());
+
+    if(item!=0){
+       QGraphicsRectItem *rectItm;
+       if((rectItm = dynamic_cast<QGraphicsIntervalItem*>(item)) ){
+          UnSelectItems();
+          rectItm->setSelected(true);
+          iSelectedInterval=rectItm->data(0).toInt();
+          CSoundInterval* csi=snd->Interval(iSelectedInterval);
+
+          if(csi!=nullptr){
+            if(soundcharedit){
+                soundcharedit->setEnabled(true);
+                soundcharedit->setText(QString::fromStdString(csi->ch));
+            }
+            if(selectionlabel){
+                selectionlabel->setText("<b>Selection</b> "+QString::number(iSelectedInterval)+": "+QString::number(csi->begin)+":"+QString::number(csi->end));
+            }
+          }
+       }else{
+           soundcharedit->setEnabled(false);
+           soundcharedit->setText("");
+           iSelectedInterval=-1;
+           selectionlabel->setText("");
+       }
+    }
+
+}
+
+void QMyWaveView::UnSelectItems(){
+   for(QGraphicsItem *i:scene->selectedItems()){
+       i->setSelected(false);
+   }
+}
+
+void QMyWaveView::GetSelectedInterval(int &begin, int &end){
+    for(QGraphicsItem *i:scene->selectedItems()){
+        begin=snd->Interval(i->data(0).toInt())->begin;
+        end=snd->Interval(i->data(0).toInt())->end;
     }
 }
 
+void QMyWaveView::WriteSoundCharToSelected(const QString &str){
+   for(QGraphicsItem *i:scene->selectedItems()){
+       snd->Interval(i->data(0).toInt())->ch=str.toStdString();
+   }
+}
+
+/*
+    Draw waves, grid, cursor
+*/
 void QMyWaveView::Draw(bool redraw){
     const float dpy = 0.8;
     float px(0), py(0), y(0), x(0), scX(0), scY(0), k(0);
@@ -152,11 +263,11 @@ void QMyWaveView::Draw(bool redraw){
         int wavescount(0);
 
         if(snd && snd->SamplesCount()>0){
-            k=((float)snd->SamplesCount()/width()/16);
+            k=32;//((float)snd->SamplesCount()/width()/4);
             scY=dpy*height()/snd->Peak();
-            scX=Zoom;
+            scX=fZoom;
 
-            wavescount=Size*Zoom/(scX*k)-1;
+            wavescount=iSize*fZoom/(scX*k)-1;
             lWaves=new QGraphicsLineItem*[wavescount];
 
             for(int i=0;i<wavescount;i++){
@@ -169,39 +280,43 @@ void QMyWaveView::Draw(bool redraw){
         }
 
 
-        if(Size>0){
+        if(iSize>0){
            //axis
            lAxises=new QGraphicsLineItem*[5];
-           lAxises[0]=scene->addLine(0,0,Zoom*Size,0, axpen);
-           lAxises[1]=scene->addLine(0,-dpy*height()*0.25,Zoom*Size,-dpy*height()*0.25, axpen);
-           lAxises[2]=scene->addLine(0, dpy*height()*0.25,Zoom*Size,dpy*height()*0.25, axpen);
-           lAxises[3]=scene->addLine(0,-dpy*height()*0.5,Zoom*Size,-dpy*height()*0.5, axpen);
-           lAxises[4]=scene->addLine(0, dpy*height()*0.5,Zoom*Size,dpy*height()*0.5, axpen);
+           lAxises[0]=scene->addLine(0,0,fZoom*iSize,0, axpen);
+           lAxises[1]=scene->addLine(0,-dpy*height()*0.25,fZoom*iSize,-dpy*height()*0.25, axpen);
+           lAxises[2]=scene->addLine(0, dpy*height()*0.25,fZoom*iSize,dpy*height()*0.25, axpen);
+           lAxises[3]=scene->addLine(0,-dpy*height()*0.5,fZoom*iSize,-dpy*height()*0.5, axpen);
+           lAxises[4]=scene->addLine(0, dpy*height()*0.5,fZoom*iSize,dpy*height()*0.5, axpen);
 
            //time bar
-           rBar=scene->addRect(0,-height()/2+10,Size*Zoom,20,bpen, QBrush(Qt::gray));
+           rBar=scene->addRect(0,-height()/2+10,iSize*fZoom,20,bpen, QBrush(Qt::gray));
 
-           int fcount=Zoom*Size/200+1;
+           int fcount=fZoom*iSize/200+1;
            tFrameNumbers=new QGraphicsTextItem*[fcount];
            lVAxises=new QGraphicsLineItem*[fcount];
            for(int i=0;i<fcount;i++){
                 lVAxises[i]=scene->addLine(i*200,-height()/2+10,i*200,height()/2-10,axpen);
-                tFrameNumbers[i]=scene->addText(QString::number((int)(i*200/Zoom)));
+                tFrameNumbers[i]=scene->addText(QString::number((int)(i*200/fZoom)));
                 tFrameNumbers[i]->setPos(i*200,-height()/2+10);
             }
 
             //intervals
            if(snd->IntervalsCount()>0){
-                lIntervals=new QGraphicsLineItem*[snd->IntervalsCount()*2];
+                rIntervals=new QGraphicsItem*[snd->IntervalsCount()];
                 for(unsigned int i=0;i<snd->IntervalsCount();i++){
-                    lIntervals[2*i]=scene->addLine(snd->Interval(i).begin*Zoom,-height()/2+10,snd->Interval(i).begin*Zoom,height()/2-10, ixpen);
-                    lIntervals[2*i+1]=scene->addLine(snd->Interval(i).end*Zoom,-height()/2+10,snd->Interval(i).end*Zoom,height()/2-10, ixpen);
+                    rIntervals[i]=new QGraphicsIntervalItem(snd->Interval(i)->begin*fZoom, -height()/2+32,
+                                                            snd->Interval(i)->end*fZoom-snd->Interval(i)->begin*fZoom,height()-40,ixpen);
+                    scene->addItem(rIntervals[i]);
+                    rIntervals[i]->setData(0,i);
+                    if(iSelectedInterval==i)
+                        rIntervals[i]->setSelected(true);
                 }
 
            }
 
             //cursor
-            lCursor=scene->addLine(CurrentPosition*Zoom,-height()/2+10,CurrentPosition*Zoom,height()/2-10, curpen);
+            lCursor=scene->addLine(fCurrentPosition*fZoom,-height()/2+10,fCurrentPosition*fZoom,height()/2-10, curpen);
        }
 
     }else{

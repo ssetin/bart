@@ -5,6 +5,7 @@
 #include <QGraphicsView>
 #include <QGraphicsScene>
 #include <QLabel>
+#include <QLineEdit>
 #include <QGraphicsTextItem>
 #include <QMouseEvent>
 #include <QWheelEvent>
@@ -12,6 +13,29 @@
 #include <QGraphicsSceneWheelEvent>
 #include "ccharsound.h"
 
+
+/*
+    QGraphicsIntervalItem
+*/
+class QGraphicsIntervalItem: public QGraphicsRectItem{
+protected:
+    virtual void Init();
+public:
+    QGraphicsIntervalItem(QGraphicsItem *parent=nullptr);
+    QGraphicsIntervalItem(qreal x, qreal y, qreal width, qreal height, const QPen &pen);
+    virtual ~QGraphicsIntervalItem();
+
+    virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0);
+signals:
+public slots:
+
+};
+
+
+
+/*
+    QMyWaveView
+*/
 class QMyWaveView: public QGraphicsView
 {
     Q_OBJECT
@@ -25,30 +49,41 @@ class QMyWaveView: public QGraphicsView
     QGraphicsLineItem **lVAxises;
     QGraphicsLineItem **lWaves;
 
-    QGraphicsLineItem **lIntervals;
+    QGraphicsItem **rIntervals;
 
     QLabel *zoomlabel;
-    QLabel *poslabel;        
+    QLabel *poslabel;
+    QLabel *selectionlabel;
+    QLineEdit *soundcharedit;
     bool eventFilter(QObject *obj, QEvent *event);
     void handleWheelOnGraphicsScene(QWheelEvent* scrollevent);
 public:
-    QMyWaveView(QWidget *parent=NULL);
+    QMyWaveView(QWidget *parent=nullptr);
     virtual ~QMyWaveView();
     void AssignWave(CCharSound *newsnd);
     void SetCursor(float newpos);
     void IncCursor(float add);
     void SetZoom(float newzoom);
+
     void SetZoomLabel(QLabel *l);
     void SetPositionLabel(QLabel *l);
+    void SetSelectionLabel(QLabel *l);
+    void SetSoundCharEdit(QLineEdit *l);
+
     void Draw(bool redraw=true);
+    void UnSelectItems();
+    void WriteSoundCharToSelected(const QString &str);
+    void GetSelectedInterval(int &begin, int &end);
 signals:
 public slots:
     void mousePressEvent(QMouseEvent * e);
 protected:
-    float CurrentPosition;    
-    float Zoom;
-    int   Size;
+    float fCurrentPosition;
+    float fZoom;
+    int   iSize;
+    int   iSelectedInterval;
     CCharSound *snd;
+    void resizeEvent(QResizeEvent *event);
 };
 
 

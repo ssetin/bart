@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>973</width>
-    <height>585</height>
+    <width>1101</width>
+    <height>629</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -24,6 +24,10 @@
   </property>
   <property name="windowTitle">
    <string>Wave parser</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>icons/application wave.png</normaloff>icons/application wave.png</iconset>
   </property>
   <property name="accessibleName">
    <string/>
@@ -112,16 +116,16 @@
            <cursorShape>IBeamCursor</cursorShape>
           </property>
           <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
+           <enum>QFrame::Box</enum>
           </property>
           <property name="frameShadow">
-           <enum>QFrame::Raised</enum>
+           <enum>QFrame::Plain</enum>
           </property>
           <property name="lineWidth">
            <number>1</number>
           </property>
           <property name="verticalScrollBarPolicy">
-           <enum>Qt::ScrollBarAlwaysOff</enum>
+           <enum>Qt::ScrollBarAsNeeded</enum>
           </property>
           <property name="sizeAdjustPolicy">
            <enum>QAbstractScrollArea::AdjustToContents</enum>
@@ -138,11 +142,23 @@
           <property name="interactive">
            <bool>true</bool>
           </property>
+          <property name="renderHints">
+           <set>QPainter::Antialiasing|QPainter::TextAntialiasing</set>
+          </property>
           <property name="cacheMode">
            <set>QGraphicsView::CacheNone</set>
           </property>
+          <property name="transformationAnchor">
+           <enum>QGraphicsView::NoAnchor</enum>
+          </property>
+          <property name="resizeAnchor">
+           <enum>QGraphicsView::NoAnchor</enum>
+          </property>
           <property name="viewportUpdateMode">
            <enum>QGraphicsView::SmartViewportUpdate</enum>
+          </property>
+          <property name="rubberBandSelectionMode">
+           <enum>Qt::ContainsItemShape</enum>
           </property>
           <property name="optimizationFlags">
            <set>QGraphicsView::DontClipPainter</set>
@@ -183,15 +199,15 @@
       <property name="font">
        <font>
         <pointsize>10</pointsize>
-        <weight>75</weight>
-        <bold>true</bold>
+        <weight>50</weight>
+        <bold>false</bold>
        </font>
       </property>
       <property name="text">
-       <string>Zoom: 1</string>
+       <string>&lt;b&gt;Zoom&lt;/b&gt;: 1</string>
       </property>
       <property name="textFormat">
-       <enum>Qt::PlainText</enum>
+       <enum>Qt::RichText</enum>
       </property>
       <property name="scaledContents">
        <bool>true</bool>
@@ -209,18 +225,49 @@
       <property name="font">
        <font>
         <pointsize>10</pointsize>
-        <weight>75</weight>
-        <bold>true</bold>
+        <weight>50</weight>
+        <bold>false</bold>
        </font>
       </property>
       <property name="text">
-       <string>Position:</string>
+       <string>&lt;b&gt;Position:&lt;/b&gt;</string>
       </property>
       <property name="textFormat">
-       <enum>Qt::PlainText</enum>
+       <enum>Qt::RichText</enum>
       </property>
       <property name="scaledContents">
        <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="lSelection">
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="textFormat">
+       <enum>Qt::RichText</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLineEdit" name="eChar">
+      <property name="maximumSize">
+       <size>
+        <width>60</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="toolTip">
+       <string>Sound</string>
+      </property>
+      <property name="layoutDirection">
+       <enum>Qt::LeftToRight</enum>
       </property>
      </widget>
     </item>
@@ -233,7 +280,7 @@
        </size>
       </property>
       <property name="toolTip">
-       <string extracomment="msec">msec</string>
+       <string extracomment="msec">Interval, msec</string>
       </property>
       <property name="statusTip">
        <string extracomment="msec"/>
@@ -245,7 +292,26 @@
        <enum>Qt::LeftToRight</enum>
       </property>
       <property name="text">
-       <string>100</string>
+       <string>70</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLineEdit" name="eIntervalOverlap">
+      <property name="maximumSize">
+       <size>
+        <width>60</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="toolTip">
+       <string>Overlap, msec</string>
+      </property>
+      <property name="text">
+       <string>20</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -259,8 +325,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>973</width>
-     <height>27</height>
+     <width>1101</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="defaultUp">
@@ -274,13 +340,16 @@
      <string>File</string>
     </property>
     <addaction name="actionOpen"/>
+    <addaction name="separator"/>
+    <addaction name="actionLoad_alphabet"/>
+    <addaction name="actionSave_alphabet"/>
+    <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
      <string>Edit</string>
     </property>
-    <addaction name="actionChar_duration"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -299,7 +368,7 @@
   </widget>
   <action name="actionOpen">
    <property name="text">
-    <string>Open</string>
+    <string>Open wave</string>
    </property>
   </action>
   <action name="actionExit">
@@ -307,9 +376,14 @@
     <string>Exit</string>
    </property>
   </action>
-  <action name="actionChar_duration">
+  <action name="actionSave_alphabet">
    <property name="text">
-    <string>Char duration</string>
+    <string>Save alphabet</string>
+   </property>
+  </action>
+  <action name="actionLoad_alphabet">
+   <property name="text">
+    <string>Load alphabet</string>
    </property>
   </action>
  </widget>

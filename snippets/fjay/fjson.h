@@ -26,16 +26,18 @@ eStringIs DetectType(string &value);
 string trimstr(const string& str);
 
 /*
- * fjValue - base fj abstract type
+ * fjValue - base fj value type
 */
 class fjValue{
 protected:
+    int level;
 public:
-    fjValue(){}
+    fjValue():level(0){}
 
     virtual string asString(bool quotes=false)const=0;
     virtual shared_ptr<fjArray> asfjArray()=0;
     virtual float asFloat()const=0;
+    virtual shared_ptr<fjObjValue> asfjObjValue()=0;
     virtual shared_ptr<fjObject> asfjObject()=0;
     virtual int asInt()const=0;
 
@@ -63,8 +65,8 @@ struct fjPair{
     fjPair()=delete;
     fjPair(string pname, shared_ptr<fjValue> nvalue){
         name=pname;
-        value=nvalue;        
-    }  
+        value=nvalue;
+    }
     ~fjPair(){        
     }
 };
@@ -87,6 +89,7 @@ public:
     virtual string asString(bool quotes=false) const;
     virtual shared_ptr<fjArray> asfjArray();
     virtual float asFloat()const;
+    virtual shared_ptr<fjObjValue> asfjObjValue();
     virtual shared_ptr<fjObject> asfjObject();
     virtual int asInt() const;
 
@@ -114,6 +117,7 @@ public:
     virtual string asString(bool quotes=false) const;
     virtual shared_ptr<fjArray> asfjArray();
     virtual float asFloat() const;
+    virtual shared_ptr<fjObjValue> asfjObjValue();
     virtual shared_ptr<fjObject> asfjObject();
     virtual int asInt() const;
 
@@ -141,6 +145,7 @@ public:
     virtual string asString(bool quotes=false)const;
     virtual shared_ptr<fjArray> asfjArray();
     virtual float asFloat() const;
+    virtual shared_ptr<fjObjValue> asfjObjValue();
     virtual shared_ptr<fjObject> asfjObject();
     virtual int asInt()const;
 
@@ -156,7 +161,7 @@ public:
 /*
     fjObjValue - value of fjObject type
 */
-class fjObjValue: public fjValue {
+class fjObjValue: public fjValue, public enable_shared_from_this<fjObjValue> {
     shared_ptr<fjObject> value;
 public:
     fjObjValue();
@@ -169,6 +174,7 @@ public:
     virtual string asString(bool quotes=false)const;
     virtual shared_ptr<fjArray> asfjArray();
     virtual float asFloat() const;
+    virtual shared_ptr<fjObjValue> asfjObjValue();
     virtual shared_ptr<fjObject> asfjObject();
     virtual int asInt()const;
 
@@ -208,6 +214,7 @@ public:
     virtual string asString(bool quotes=false)const;
     virtual shared_ptr<fjArray> asfjArray();
     virtual float asFloat()const;
+    virtual shared_ptr<fjObjValue> asfjObjValue();
     virtual shared_ptr<fjObject> asfjObject();
     virtual int asInt()const;
 

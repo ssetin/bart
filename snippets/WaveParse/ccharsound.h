@@ -29,7 +29,7 @@ struct WAVHEADER
     short blockAlign;
     short bitsPerSample;
     char subchunk2Id[4];
-    int subchunk2Size;
+    unsigned int subchunk2Size;
 };
 
 /*
@@ -66,8 +66,8 @@ public:
 struct CSoundInterval{
     unsigned int begin;
     unsigned int end;
-    char ch;
-    CSoundInterval():begin(-1),end(-1),ch(0){}
+    string ch;
+    CSoundInterval():begin(-1),end(-1),ch(""){}
 };
 
 
@@ -86,7 +86,8 @@ class CCharSound
     char*  data;
     CSoundInterval* intervals;
     unsigned int iIntervalsCount;
-    short iVolumeThresh;
+    unsigned int iSamplesPerInterval;
+    float iVolumeThresh;
     int SampleToVal(CWaveSample &s);
 public:
     CCharSound();
@@ -95,7 +96,7 @@ public:
     char* GetLastError();
     int Data(unsigned int i);
     char* Data();
-    CSoundInterval Interval(unsigned int i);
+    CSoundInterval* Interval(unsigned int i);
     WAVHEADER* Header();
     float Duration();
     unsigned int SamplesCount();
@@ -103,9 +104,12 @@ public:
     int Size();    
     int Peak();
     bool IsSigned();
+    int BytesPerSample();
     float SampleNoToSecond(unsigned int n);
     CWaveTimer SampleNoToTime(unsigned int n);    
-    void FormIntervals(unsigned int msec);
+    void FormIntervals(unsigned int msec, unsigned int overlap);
+    bool SaveIntervalsToFile(const char* filename);
+    bool LoadIntervalsFromFile(const char* filename);
 };
 
 #endif // CCHARSOUND_H

@@ -13,12 +13,12 @@ using namespace std;
 */
 string trimstr(const string& str)
 {
-    size_t first = str.find_first_not_of(" \n");
+    size_t first = str.find_first_not_of(" \n\t");
     if (string::npos == first)
     {
         return str;
     }
-    size_t last = str.find_last_not_of(" \n");
+    size_t last = str.find_last_not_of(" \n\t");
     return str.substr(first, (last - first + 1));
 }
 
@@ -117,6 +117,10 @@ shared_ptr<fjObject> fjString::asfjObject(){
     return make_shared<fjObject>(value);
 }
 
+shared_ptr<fjObjValue> fjString::asfjObjValue(){
+    return make_shared<fjObjValue>(fjObject("{ value: "+value+"}"));
+}
+
 int fjString::asInt() const{
     return stoi(value);
 }
@@ -164,6 +168,10 @@ string fjInt::asString(bool) const{
 
 shared_ptr<fjArray> fjInt::asfjArray(){
     return make_shared<fjArray>("["+to_string(value)+"]");
+}
+
+shared_ptr<fjObjValue> fjInt::asfjObjValue(){
+    return make_shared<fjObjValue>(fjObject("{ value: "+std::to_string(value)+"}"));
 }
 
 float fjInt::asFloat() const{
@@ -230,6 +238,10 @@ shared_ptr<fjObject> fjFloat::asfjObject(){
     return make_shared<fjObject>("{ value: "+std::to_string(value)+"}");
 }
 
+shared_ptr<fjObjValue> fjFloat::asfjObjValue(){
+    return make_shared<fjObjValue>(fjObject("{ value: "+std::to_string(value)+"}"));
+}
+
 int fjFloat::asInt() const{
     return (int)value;
 }
@@ -247,9 +259,14 @@ size_t fjFloat::Size()const{return 1;}
     fjObjValue
 */
 fjObjValue::fjObjValue(): value(nullptr){}
-fjObjValue::fjObjValue(const fjObjValue &val){
+fjObjValue::fjObjValue(const fjObjValue &val):enable_shared_from_this(val){
         value=val.value;
 }
+
+fjObjValue::fjObjValue(fjObjValue &&val){
+    value=move(val.value);
+}
+
 
 fjObjValue::fjObjValue(const fjObject &val){
     value=make_shared<fjObject>(val);
@@ -273,13 +290,18 @@ shared_ptr<fjValue>& fjObjValue::operator[](string name){
     return ((fjObject)*value)[name];
 }
 
+
 string fjObjValue::asString(bool)const{
     string str;
     str="{";
     for(unsigned int i=0;i<value.get()->pair.size();i++){
-        str+=value.get()->pair.at(i).name+": "+(*value.get()->pair.at(i).value).asString(true);
-        if(i<value.get()->pair.size()-1)
-            str+=", ";
+        if(value.get()->pair.at(i).value!=nullptr){
+            str+="\t"+value.get()->pair.at(i).name+": "+(*value.get()->pair.at(i).value).asString(true);
+            if(i<value.get()->pair.size()-1)
+                str+=",\n";
+            else
+                str+="\n";
+            }
     }
     str+="}";
     return str;
@@ -287,6 +309,10 @@ string fjObjValue::asString(bool)const{
 
 shared_ptr<fjArray> fjObjValue::asfjArray(){
     return nullptr;
+}
+
+shared_ptr<fjObjValue> fjObjValue::asfjObjValue(){
+    return shared_from_this();
 }
 
 float fjObjValue::asFloat()const{
@@ -387,7 +413,7 @@ void fjArray::Set(const string &jstr){
                 if(arraye!=string::npos){
                     valstr=jstr.substr(arrayb,arraye-arrayb+1);
                     AddValue(valstr);
-                    elemb=jstr.find_first_not_of(" \n",arraye+1)+1;
+                    elemb=jstr.find_first_not_of(" \n\t",arraye+1)+1;
                 }
             }else
             if(objb!=string::npos && objb<eleme && (objb<arrayb || arrayb==string::npos)){
@@ -395,7 +421,7 @@ void fjArray::Set(const string &jstr){
                 if(obje!=string::npos){
                     valstr=jstr.substr(objb,obje-objb+1);
                     AddValue(valstr);
-                    elemb=jstr.find_first_not_of(" \n",obje+1)+1;
+                    elemb=jstr.find_first_not_of(" \n\t",obje+1)+1;
                 }
             }else
             if(eleme!=string::npos){
@@ -451,6 +477,8 @@ shared_ptr<fjValue>& fjArray::operator[](unsigned int i){
 string fjArray::asString(bool quotes) const{
     string res("");
     for(unsigned int i=0;i<value.size();i++){
+        if(value.at(i)->IsObject())
+            res+="\n";
         res+=value.at(i)->asString(quotes);
         if(i<value.size()-1)
             res+=", ";
@@ -460,6 +488,10 @@ string fjArray::asString(bool quotes) const{
 
 shared_ptr<fjArray> fjArray::asfjArray(){
     return shared_from_this();
+}
+
+shared_ptr<fjObjValue> fjArray::asfjObjValue(){
+    return make_shared<fjObjValue>(fjObject("{}"));
 }
 
 float fjArray::asFloat() const{
@@ -589,7 +621,7 @@ void fjObject::Parse(const string jstr){
                 if(arraye!=string::npos){
                     valstr=jstr.substr(arrayb,arraye-arrayb+1);
                     AddValue(name,valstr);
-                    elemb=jstr.find_first_not_of(" \n",arraye+1)+1;
+                    elemb=jstr.find_first_not_of(" \n\t",arraye+1)+1;
                 }
             }else
             if(objb!=string::npos && objb<eleme && (objb<arrayb || arrayb==string::npos)){
@@ -597,7 +629,7 @@ void fjObject::Parse(const string jstr){
                 if(obje!=string::npos){
                     valstr=jstr.substr(objb,obje-objb+1);
                     AddValue(name,valstr);
-                    elemb=jstr.find_first_not_of(" \n",obje+1)+1;
+                    elemb=jstr.find_first_not_of(" \n\t",obje+1)+1;
                 }
             }else
             if(eleme!=string::npos){
@@ -624,7 +656,6 @@ shared_ptr<fjValue>& fjObject::operator[](string name){
     for(unsigned int i=0;i<pair.size();i++){
         if(pair.at(i).name==name){
             return pair.at(i).value;
-            break;
         }
     }
     pair.emplace_back(fjPair(name,nullptr));
@@ -649,7 +680,7 @@ void fjObject::Set(string name, shared_ptr<fjValue> value){
                 pair.at(i).value=value;
                 return;
             }
-        }
+        }        
         pair.emplace_back(fjPair(name,value));
     }
 }
@@ -707,7 +738,7 @@ void fjObject::LoadFromFile(const string filename){
 
 void fjObject::SaveToFile(const string filename){
     ofstream fstr(filename);
-    fstr<<this;
+    fstr<<*this;
     fstr.close();
 }
 
@@ -757,12 +788,14 @@ ostream& operator<<(ostream& s, const fjObjValue &t)
 
 ostream& operator<<(ostream& s, const fjObject &t)
 {
-    s<<"{";
+    s<<"{"<<endl;
     for(unsigned int i=0;i<t.pair.size();i++){
         if(t.pair.at(i).value!=nullptr){
-            s<<t.pair.at(i).name<<": "<<(*t.pair.at(i).value).asString(true);
+            s<<"\t"<<t.pair.at(i).name<<": "<<t.pair.at(i).value;
             if(i<t.pair.size()-1)
-                s<<", ";
+                s<<", "<<endl;
+            else
+                s<<endl;
         }
     }
     s<<"}";

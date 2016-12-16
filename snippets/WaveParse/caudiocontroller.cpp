@@ -4,25 +4,37 @@
 
 CAudioController::CAudioController(QObject *parent): QObject(parent)
 {
-    audio=NULL;
-    ba=NULL;
-    dev=NULL;
-    view=NULL;
-    snd=NULL;
-    iNotifyDelay=500;
+    audio=nullptr;
+    ba=nullptr;
+    dev=nullptr;
+    view=nullptr;
+    snd=nullptr;
+    iNotifyDelay=300;
 }
 
 CAudioController::CAudioController(CCharSound *newsnd, QMyWaveView *newview, int NotifyDelay){
-    audio=NULL;
-    ba=NULL;
-    dev=NULL;
-    view=NULL;
-    snd=NULL;
+    audio=nullptr;
+    ba=nullptr;
+    dev=nullptr;
+    view=nullptr;
+    snd=nullptr;
     Init(newsnd, newview, NotifyDelay);
 }
 
+void CAudioController::PrepareBuffer(unsigned int from,int to){
+    if(dev==nullptr || snd==nullptr) return;
+    if(to==-1)
+        to=snd->Size();
+    else
+        to*=snd->BytesPerSample();
+    from*=snd->BytesPerSample();
+    dev->close();
+    dev->setData(&snd->Data()[from], to-from);
+    dev->open(QBuffer::ReadOnly);
+}
+
 void CAudioController::Init(CCharSound *newsnd, QMyWaveView *newview, int NotifyDelay){
-    if(newsnd==NULL) return;
+    if(newsnd==nullptr) return;
     snd=newsnd;
     view=newview;
     iNotifyDelay=NotifyDelay;
@@ -42,17 +54,14 @@ void CAudioController::Init(CCharSound *newsnd, QMyWaveView *newview, int Notify
     ba = new QByteArray(snd->Size(),0);
     ba->setRawData(snd->Data(),snd->Size());
     dev=new QBuffer();
-    dev->setBuffer(ba);
-    dev->open(QBuffer::ReadOnly);
+    PrepareBuffer();
 
-    //ba->replace( 0,snd->Size() ,snd->Data());
     dev->seek(0);
 
     audio = new QAudioOutput(format);
     audio->setNotifyInterval(iNotifyDelay);
     connect(audio, SIGNAL(notify()), this, SLOT(processaudio()));
     connect(audio, SIGNAL(stateChanged(QAudio::State)), this, SLOT(audioStateChanged(QAudio::State)));
-
 
 }
 
@@ -65,21 +74,36 @@ void CAudioController::Clear(){
         delete audio;
 }
 
+void CAudioController::Play(unsigned int from,int to){
+    if(view)
+        view->SetCursor(from);
+    if(dev){
+        PrepareBuffer(from,to);
+        dev->seek(0);
+        if(audio)
+            audio->start(dev);
+    }    
+
+    qDebug()<<"Play("<<from<<","<<to<<")";
+}
+
 
 void CAudioController::Play(){
-    if(view)
-        view->SetCursor(0);
-    if(dev && audio){
-        dev->seek(0);
-        audio->start(dev);        
+    if(audio && dev){
+        int p=dev->pos();
+        PrepareBuffer();
+        dev->seek(p);
+        audio->start(dev);
     }
-    qDebug()<<"Play()";
 }
 
 void CAudioController::Stop(){
     if(audio)
-        audio->stop();
-    dev->seek(0);
+        audio->stop();    
+    if(view)
+        view->SetCursor(0);
+    if(dev)
+        dev->seek(0);
     qDebug()<<"Stop()";
 }
 

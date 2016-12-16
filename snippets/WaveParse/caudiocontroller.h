@@ -20,12 +20,14 @@ class CAudioController: public QObject
     QMyWaveView *view;
     QAudio::State state;
     int iNotifyDelay;
+    void PrepareBuffer(unsigned int from=0,int to=-1);
 public:
-    CAudioController(QObject *parent=NULL);
+    CAudioController(QObject *parent=nullptr);
     CAudioController(CCharSound *newsnd, QMyWaveView *newview, int NotifyDelay=100);
     void Init(CCharSound *newsnd, QMyWaveView *newview, int NotifyDelay=100);
     void Clear();
     void Play();
+    void Play(unsigned int from,int to=-1);
     void Stop();
     void Pause();
     virtual ~CAudioController();

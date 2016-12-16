@@ -17,12 +17,15 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     ccharsound.cpp \
     qmywaveview.cpp \
+    ../fjay/fjson.cpp \
     caudiocontroller.cpp
 
 HEADERS  += mainwindow.h \
     ccharsound.h \
     qmywaveview.h \
-    caudiocontroller.h
+    caudiocontroller.h \
+    ../fjay/fjson.h \
+    ui_mainwindow.h
 
 FORMS    += mainwindow.ui
 

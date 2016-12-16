@@ -21,8 +21,17 @@ private slots:
     void on_actionOpen_triggered();
     void on_actionExit_triggered();
     void on_play();
+    void on_stop();
+    void on_stopplay();
     void on_pause();
     void on_intervals();
+    void on_playinterval();
+    void on_actionSave_alphabet_triggered();
+
+    void on_eChar_textEdited(const QString &arg1);
+
+    void on_actionLoad_alphabet_triggered();
+
 public slots:
 
 private:
