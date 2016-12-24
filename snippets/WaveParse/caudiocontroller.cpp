@@ -9,7 +9,7 @@ CAudioController::CAudioController(QObject *parent): QObject(parent)
     dev=nullptr;
     view=nullptr;
     snd=nullptr;
-    iNotifyDelay=300;
+    iNotifyDelay=400;
 }
 
 CAudioController::CAudioController(CCharSound *newsnd, QMyWaveView *newview, int NotifyDelay){
@@ -80,6 +80,8 @@ void CAudioController::Play(unsigned int from,int to){
     if(dev){
         PrepareBuffer(from,to);
         dev->seek(0);
+        // hmm....
+        audio->setBufferSize(dev->size());
         if(audio)
             audio->start(dev);
     }    
@@ -96,6 +98,7 @@ void CAudioController::Play(){
         audio->start(dev);
     }
 }
+
 
 void CAudioController::Stop(){
     if(audio)

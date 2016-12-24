@@ -1,9 +1,9 @@
 #include "ccharsound.h"
 #include <stdio.h>
+#include <math.h>
 #include "../fjay/fjson.h"
 
 #include<QDebug>
-
 
 /*
     CWaveTimer
@@ -47,7 +47,7 @@ CCharSound::CCharSound()
     iPeak=0;
     bSigned=false;
     ibytesPerSample=0;
-    iVolumeThresh=0.07;
+    fDynamicRange=0;
 }
 
 CCharSound::~CCharSound()
@@ -96,7 +96,7 @@ bool CCharSound::IsSigned(){
     return bSigned;
 }
 
-int CCharSound::BytesPerSample(){
+short CCharSound::BytesPerSample(){
     return ibytesPerSample;
 }
 
@@ -104,6 +104,13 @@ CWaveTimer CCharSound::SampleNoToTime(unsigned int n){
     return CWaveTimer((int)(SampleNoToSecond(n)*1000));
 }
 
+double CCharSound::VolumeToDBFS(double volume){
+    return 20*log10(volume*1.22474487139);
+}
+
+double CCharSound::DBFSToVolume(double dbfs){
+    return pow(10.0, dbfs * 0.05 )*0.81649658092;
+}
 
 int CCharSound::SampleToVal(CWaveSample &s){
     switch(header.bitsPerSample){
@@ -120,6 +127,29 @@ int CCharSound::SampleToVal(CWaveSample &s){
     }
 }
 
+CWaveSample CCharSound::ValToSample(int value){
+    CWaveSample s;
+
+    switch(header.bitsPerSample){
+        case 8:
+            s.sample8=value;
+            break;
+        case 16:
+            s.sample16=value;
+            break;
+        case 24:        
+            s.sample24=value;
+            break;
+        case 32:
+            s.sample32=value;
+            break;
+        default:
+            s.sample16=value;
+            break;
+    }
+    return s;
+}
+
 int CCharSound::Data(unsigned int i){
     if(data==nullptr) return 0;
     CWaveSample amp;
@@ -127,7 +157,7 @@ int CCharSound::Data(unsigned int i){
     if(bSigned)
         return SampleToVal(amp);
     else
-        return SampleToVal(amp)-(iPeak/2);
+        return SampleToVal(amp)-(iPeak*0.5);
 }
 
 char* CCharSound::Data(){
@@ -140,10 +170,74 @@ CSoundInterval* CCharSound::Interval(unsigned int i){
     return nullptr;
 }
 
+void CCharSound::SetData(unsigned int pos, int value){
+    if(data==nullptr) return;
+
+    if(value>=iPeak*0.5)
+        value=iPeak*0.5-1;
+    else
+    if(value<=-iPeak*0.5)
+        value=-iPeak*0.5+1;
+
+    CWaveSample amp;
+
+    if(bSigned)
+        amp=ValToSample(value);
+    else
+        amp=ValToSample(value+iPeak*0.5);
+
+    memcpy((void*)&data[pos*ibytesPerSample*header.numChannels],(void*)&amp.data[0],ibytesPerSample);
+}
+
+void CCharSound::Normalize(short aligment, short rmswindow, short rmsoverlap, short silent){
+    if(data==nullptr) return;
+    unsigned int count(0), stepsamples(0), k(0), oversamples(0);
+    unsigned int i(0);
+    double dRMS(0), tmp(0);
+    long double s(0);
+    double dTargetMax=DBFSToVolume(fDynamicRange-aligment);
+    double dSilent=DBFSToVolume(silent);
+    stepsamples=rmswindow*(header.byteRate/ibytesPerSample/header.numChannels)/1000;
+    oversamples=rmsoverlap*(header.byteRate/ibytesPerSample/header.numChannels)/1000;
+
+    qDebug()<<"Normalazing. "<<"DynamicRange="<<fDynamicRange<<" dTargetMax="<<QString::number(dTargetMax,'f')
+           <<" dSilent"<<dSilent<<" StepSamples="<<stepsamples<<" oversamples="<<oversamples;
+
+    while(i<iSamplesCount){
+        tmp=Data(i);
+        if(abs(tmp)>dSilent){
+            s+=tmp*tmp;
+            count++;
+        }
+
+        if( k==stepsamples || i==iSamplesCount-1){
+            if(count>0){
+                dRMS=sqrt(s / (double)count);
+                qDebug()<<"window: ["<<i-k<<", "<<i<<"]";
+                for(unsigned int j=i-k;j<i;j++){
+                    tmp=Data(j);
+                    if(abs(tmp)>dSilent)
+                        SetData(j,(dTargetMax/dRMS) * tmp);
+                }
+                count=0;
+            }
+            s=0;
+            k=0;
+            if(i>oversamples && i<iSamplesCount-oversamples)
+                i-=oversamples;
+        }
+        i++;
+        k++;
+    }
+
+    qDebug()<<"Done";
+}
+
 void CCharSound::FormIntervals(unsigned int msec, unsigned int overlap){
     if(data==nullptr) return;
     unsigned int samples=msec*(header.byteRate/ibytesPerSample/header.numChannels)/1000;
     unsigned int ovsamples=overlap*(header.byteRate/ibytesPerSample/header.numChannels)/1000;
+    double dSilent=DBFSToVolume(SILENT);
     iSamplesPerInterval=samples+2*ovsamples;
     unsigned int k(0);
 
@@ -152,7 +246,7 @@ void CCharSound::FormIntervals(unsigned int msec, unsigned int overlap){
     iIntervalsCount=0;
 
     for(unsigned int i=0;i<iSamplesCount;i++){
-        if(abs(Data(i))>=iVolumeThresh*iPeak){
+        if(abs(Data(i))>dSilent){
             i+=samples;
             iIntervalsCount++;
         }
@@ -161,7 +255,7 @@ void CCharSound::FormIntervals(unsigned int msec, unsigned int overlap){
 
     intervals=new CSoundInterval[iIntervalsCount];
     for(unsigned int i=0;i<iSamplesCount;i++){
-        if(abs(Data(i))>=iVolumeThresh*iPeak){
+        if(abs(Data(i))>dSilent){
             if(i>ovsamples)
                 intervals[k].begin=i-ovsamples;
             else
@@ -177,8 +271,9 @@ void CCharSound::FormIntervals(unsigned int msec, unsigned int overlap){
     }
 
     qDebug()<<"Formed "<<iIntervalsCount<<" intervals. Samples count="<<samples;
-
 }
+
+
 
 bool CCharSound::SaveIntervalsToFile(const char* filename){
     fjObject obj;
@@ -188,14 +283,16 @@ bool CCharSound::SaveIntervalsToFile(const char* filename){
     fjArray abc;
 
     for(unsigned int i=0;i<iIntervalsCount;i++){
-        fjObject tobj;
-        tobj.Set("Char",make_shared<fjString>(intervals[i].ch));
-        tobj.Set("Begin",make_shared<fjInt>(intervals[i].begin));
-        fjArray tarr;
-        for(unsigned int k=intervals[i].begin;k<=intervals[i].end;k++)
-            tarr.Add(Data(k));
-        tobj.Set("Samples", make_shared<fjArray>(tarr));
-        abc.Add(make_shared<fjObjValue>(tobj));
+        if(intervals[i].ch>""){
+            fjObject tobj;
+            tobj.Set("Char",make_shared<fjString>(intervals[i].ch));
+            tobj.Set("Begin",make_shared<fjInt>(intervals[i].begin));
+            fjArray tarr;
+            for(unsigned int k=intervals[i].begin;k<=intervals[i].end;k++)
+                tarr.Add(Data(k));
+            tobj.Set("Samples", make_shared<fjArray>(tarr));
+            abc.Add(make_shared<fjObjValue>(tobj));
+        }
     }
 
     obj.Set("Alphabet", make_shared<fjArray>(abc));
@@ -332,9 +429,10 @@ bool CCharSound::LoadFromFile(const char* filename){
     iPeak=pow(2,header.bitsPerSample);
 
     fDuration=1.0 * header.subchunk2Size / ibytesPerSample / header.numChannels / header.sampleRate;
+    fDynamicRange=VolumeToDBFS(iPeak*0.5);
 
     qDebug()<<"SubCh1Size="<<header.subchunk1Size<<" SizeofHeader="<<sizeof(WAVHEADER)<<" SamplesCount="<<iSamplesCount<<" subchunk2="<<header.subchunk2Size;
-    qDebug()<<"sizeof(sample)"<<sizeof(CWaveSample)<<"peak: "<<iPeak<<" signed: "<<bSigned<<"Bits per sample:"<<header.bitsPerSample;
+    qDebug()<<"peak: "<<iPeak<<" signed: "<<bSigned<<"Bits per sample:"<<header.bitsPerSample;
 
     return true;
 }

@@ -88,25 +88,15 @@ bool QMyWaveView::eventFilter(QObject *obj, QEvent *event) {
   return false;
 }
 
-void QMyWaveView::resizeEvent(QResizeEvent *event){    
-    event->accept();
-    //Draw(true);
-    //QRectF r=scene->sceneRect();
-    //r.setHeight(this->height()-20);
-    //scene->setSceneRect(r);
-    //fitInView(r, Qt::KeepAspectRatioByExpanding);
+void QMyWaveView::resizeEvent(QResizeEvent *event){        
+    QGraphicsView::resizeEvent(event);
 }
 
-void QMyWaveView::handleWheelOnGraphicsScene(QWheelEvent* scrollevent)
-{
+void QMyWaveView::handleWheelOnGraphicsScene(QWheelEvent* scrollevent){
     float prezoom(fZoom);
-    fZoom+=0.0001*(float)scrollevent->angleDelta().y();
-    if(fZoom<(float)width()/(float)iSize){
-        fZoom=(float)width()/(float)iSize;
-        return;
-    }
-    if(fZoom>5){
-        fZoom=5;
+    fZoom+=scrollevent->angleDelta().y()*0.0001;
+    if(fZoom<fDefZoom || fZoom>2){
+        fZoom=prezoom;
         return;
     }
 
@@ -116,7 +106,7 @@ void QMyWaveView::handleWheelOnGraphicsScene(QWheelEvent* scrollevent)
     centerOn(remapped.x()*fZoom/prezoom,0);
 
     if(zoomlabel)
-        zoomlabel->setText("<b>Zoom:</b> "+QString::number(fZoom,10,2));
+        zoomlabel->setText("<b>Zoom:</b> "+QString::number(fZoom,10,3));
 
     scrollevent->accept();
 }
@@ -130,13 +120,14 @@ void QMyWaveView::AssignWave(CCharSound *newsnd){
     snd=newsnd;
     iSize=snd->SamplesCount();
     fZoom=(float)width()/(float)iSize;
+    fDefZoom=fZoom;
 
-    qDebug()<<" Size: "<<iSize<<" Zoom: "<<QString::number(fZoom,10,2)<<" Width: "<<width();
+    qDebug()<<" Size: "<<iSize<<" Zoom: "<<QString::number(fZoom,10,3)<<" Width: "<<width();
 
     Draw();
 
     if(zoomlabel)
-        zoomlabel->setText("<b>Zoom:</b> "+QString::number(fZoom,10,2));
+        zoomlabel->setText("<b>Zoom:</b> "+QString::number(fZoom,10,3));
 
     if(poslabel)
         poslabel->setText("<b>Position:</b> 00:00:00.000");
@@ -258,6 +249,7 @@ void QMyWaveView::Draw(bool redraw){
         QPen ixpen(Qt::red);
         axpen.setStyle(Qt::DashLine);
         ixpen.setStyle(Qt::DashLine);
+        pen.setWidth(2);
 
         scene->clear();
         int wavescount(0);
@@ -267,7 +259,7 @@ void QMyWaveView::Draw(bool redraw){
             scY=dpy*height()/snd->Peak();
             scX=fZoom;
 
-            wavescount=iSize*fZoom/(scX*k)-1;
+            wavescount=snd->SamplesCount()/k;//iSize*fZoom/(scX*k)-1;
             lWaves=new QGraphicsLineItem*[wavescount];
 
             for(int i=0;i<wavescount;i++){
@@ -317,6 +309,11 @@ void QMyWaveView::Draw(bool redraw){
 
             //cursor
             lCursor=scene->addLine(fCurrentPosition*fZoom,-height()/2+10,fCurrentPosition*fZoom,height()/2-10, curpen);
+
+            //fix scene size
+            QRectF srect=sceneRect();
+            srect.setWidth(rBar->rect().width());
+            setSceneRect(srect);
        }
 
     }else{

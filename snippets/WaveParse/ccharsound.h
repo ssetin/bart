@@ -10,6 +10,19 @@
 #include<string>
 
 
+/*
+    Constants
+    1. Maximum volume level for normalizing in -dBFS
+    2. Window size in ms for RMS calculating
+    2. Windows overlapping size in ms
+    3. Silent in dB
+*/
+#define dBFS_ALIGMENT   16
+#define RMS_WINDOW      80
+#define RMS_OVERLAP     40
+#define SILENT          32
+
+
 using namespace std;
 
 /*
@@ -81,14 +94,18 @@ class CCharSound
     unsigned int iSamplesCount;
     bool   bSigned;
     int    iPeak;
-    int    ibytesPerSample;
+    short  ibytesPerSample;
     char   lasterror[64];
     char*  data;
     CSoundInterval* intervals;
     unsigned int iIntervalsCount;
     unsigned int iSamplesPerInterval;
-    float iVolumeThresh;
+    float fDynamicRange;
     int SampleToVal(CWaveSample &s);
+    CWaveSample ValToSample(int value);
+    void SetData(unsigned int pos, int value);
+    double VolumeToDBFS(double volume);
+    double DBFSToVolume(double dbfs);
 public:
     CCharSound();
     ~CCharSound();
@@ -104,12 +121,13 @@ public:
     int Size();    
     int Peak();
     bool IsSigned();
-    int BytesPerSample();
+    short BytesPerSample();
     float SampleNoToSecond(unsigned int n);
     CWaveTimer SampleNoToTime(unsigned int n);    
     void FormIntervals(unsigned int msec, unsigned int overlap);
     bool SaveIntervalsToFile(const char* filename);
     bool LoadIntervalsFromFile(const char* filename);
+    void Normalize(short aligment=dBFS_ALIGMENT, short rmswindow=RMS_WINDOW, short rmsoverlap=RMS_OVERLAP, short silent=SILENT);
 };
 
 #endif // CCHARSOUND_H

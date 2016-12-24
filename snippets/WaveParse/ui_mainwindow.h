@@ -54,7 +54,6 @@ public:
     QLineEdit *eIntervalOverlap;
     QMenuBar *menuBar;
     QMenu *menuFile;
-    QMenu *menuEdit;
     QStatusBar *statusBar;
     QToolBar *toolBar;
 
@@ -207,13 +206,11 @@ public:
         MainWindow->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QStringLiteral("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 1101, 21));
+        menuBar->setGeometry(QRect(0, 0, 1101, 27));
         menuBar->setDefaultUp(false);
         menuBar->setNativeMenuBar(true);
         menuFile = new QMenu(menuBar);
         menuFile->setObjectName(QStringLiteral("menuFile"));
-        menuEdit = new QMenu(menuBar);
-        menuEdit->setObjectName(QStringLiteral("menuEdit"));
         MainWindow->setMenuBar(menuBar);
         statusBar = new QStatusBar(MainWindow);
         statusBar->setObjectName(QStringLiteral("statusBar"));
@@ -223,7 +220,6 @@ public:
         MainWindow->addToolBar(Qt::TopToolBarArea, toolBar);
 
         menuBar->addAction(menuFile->menuAction());
-        menuBar->addAction(menuEdit->menuAction());
         menuFile->addAction(actionOpen);
         menuFile->addSeparator();
         menuFile->addAction(actionLoad_alphabet);
@@ -272,7 +268,6 @@ public:
 #endif // QT_NO_TOOLTIP
         eIntervalOverlap->setText(QApplication::translate("MainWindow", "20", 0));
         menuFile->setTitle(QApplication::translate("MainWindow", "File", 0));
-        menuEdit->setTitle(QApplication::translate("MainWindow", "Edit", 0));
         toolBar->setWindowTitle(QApplication::translate("MainWindow", "toolBar", 0));
     } // retranslateUi
 

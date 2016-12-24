@@ -26,6 +26,7 @@ private slots:
     void on_pause();
     void on_intervals();
     void on_playinterval();
+    void on_normalize();
     void on_actionSave_alphabet_triggered();
 
     void on_eChar_textEdited(const QString &arg1);

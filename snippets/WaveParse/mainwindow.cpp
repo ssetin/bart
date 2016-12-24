@@ -13,6 +13,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->statusBar->addWidget(ui->lPosition);
     ui->statusBar->addWidget(ui->lSelection);
 
+    ui->toolBar->addAction(QPixmap("icons/audio_wave2.png"), "Normalize", this, SLOT(on_normalize()));
+    ui->toolBar->addSeparator();
     ui->toolBar->addAction(QPixmap("icons/StopPlay-Blue-Button.png"), "Play from begin", this, SLOT(on_stopplay()));
     ui->toolBar->addAction(QPixmap("icons/stop_button.png"), "Stop", this, SLOT(on_stop()));
     ui->toolBar->addAction(QPixmap("icons/play_blue_button.png"), "Play", this, SLOT(on_play()));
@@ -106,6 +108,11 @@ void MainWindow::on_pause()
 
 void MainWindow::on_stop(){
     audio.Stop();
+}
+
+void MainWindow::on_normalize(){
+    snd.Normalize();
+    ui->graphicsView->Draw(true);
 }
 
 

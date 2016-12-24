@@ -80,6 +80,7 @@ public slots:
 protected:
     float fCurrentPosition;
     float fZoom;
+    float fDefZoom;
     int   iSize;
     int   iSelectedInterval;
     CCharSound *snd;
