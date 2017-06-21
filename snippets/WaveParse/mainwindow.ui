@@ -346,7 +346,15 @@
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>Tools</string>
+    </property>
+    <addaction name="actionTeach_network"/>
+    <addaction name="actionLoad_network"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuTools"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QToolBar" name="toolBar">
@@ -378,6 +386,16 @@
   <action name="actionLoad_alphabet">
    <property name="text">
     <string>Load alphabet</string>
+   </property>
+  </action>
+  <action name="actionTeach_network">
+   <property name="text">
+    <string>Teach network</string>
+   </property>
+  </action>
+  <action name="actionLoad_network">
+   <property name="text">
+    <string>Recognize</string>
    </property>
   </action>
  </widget>

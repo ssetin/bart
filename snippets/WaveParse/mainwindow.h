@@ -33,6 +33,10 @@ private slots:
 
     void on_actionLoad_alphabet_triggered();
 
+    void on_actionTeach_network_triggered();
+
+    void on_actionLoad_network_triggered();
+
 public slots:
 
 private:

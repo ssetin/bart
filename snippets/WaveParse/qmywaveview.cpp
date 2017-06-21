@@ -63,7 +63,7 @@ QMyWaveView::QMyWaveView(QWidget *parent): QGraphicsView(parent){
 
     scene = new QGraphicsScene;
     scene->setBackgroundBrush(QBrush(Qt::black));
-    setScene(scene);    
+    setScene(scene);
     installEventFilter(this);
 
     Draw();
@@ -71,7 +71,7 @@ QMyWaveView::QMyWaveView(QWidget *parent): QGraphicsView(parent){
 
 QMyWaveView::~QMyWaveView()
 {
-    qDebug()<<"~QMyWaveView()";
+    //qDebug()<<"~QMyWaveView()";
     if(scene){
         delete scene;
     }
@@ -88,7 +88,7 @@ bool QMyWaveView::eventFilter(QObject *obj, QEvent *event) {
   return false;
 }
 
-void QMyWaveView::resizeEvent(QResizeEvent *event){        
+void QMyWaveView::resizeEvent(QResizeEvent *event){
     QGraphicsView::resizeEvent(event);
 }
 
@@ -155,7 +155,7 @@ void QMyWaveView::SetCursor(float newpos){
     fCurrentPosition=newpos;
     if(poslabel){
         poslabel->setText("<b>Position:</b> "+QString::number((int)fCurrentPosition)+" : "+QString::fromStdString(snd->SampleNoToTime((int)fCurrentPosition).ToStr() )) ;
-    }    
+    }
     lCursor->setLine(fCurrentPosition*fZoom,-height()/2+10,fCurrentPosition*fZoom,height()/2-10);
     Draw(false);
 }

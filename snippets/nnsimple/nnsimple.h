@@ -22,6 +22,7 @@ enum Activate_Function {AF_THRESH, AF_SIGMA};
     afunction - activate function
 */
 class NNSimple{
+protected:
     double **w;
     double *x;
     double *y;
@@ -30,20 +31,23 @@ class NNSimple{
     int sizex, sizey;
     double n;
     Activate_Function afunction;
-    void CorrectWeight(int j,double d);
-    double AFunction(double nsum);
-    int    MaxY();
-    double MaxYVal();
-    void TeachThresh(double **voc, int stepscount);
-    void TeachSigma(double **voc, int stepscount);
-    void Init();
-    void Clear();
+    virtual void CorrectWeight(int j,double d);
+    virtual double AFunction(double nsum);
+    virtual int    MaxY();
+    virtual double MaxYVal();
+    virtual void TeachThresh(double **voc, int stepscount);
+    virtual void TeachSigma(double **voc, int stepscount);
+    virtual void Init();
+    virtual void Clear();
 public:
     NNSimple(Activate_Function nfunce=AF_THRESH);
-    ~NNSimple();
-    int Process(double *inputx);
-    void PrintY(int precision=10);
-    void SetE(double ne);
-    void SetN(double nn);
-    void Teach(const char *filename, int stepscount);
+    virtual ~NNSimple();
+    virtual int Process(double *inputx);
+    virtual void PrintY(int precision=10);
+    virtual int  GetY();
+    virtual void SetE(double ne);
+    virtual void SetN(double nn);
+    virtual void Teach(const char *filename, int stepscount);
+    virtual void LoadWeights(const char *filename);
+    virtual void SaveWeights(const char *filename);
 };

@@ -33,13 +33,20 @@ string CWaveTimer::ToStr(){
     return result;
 }
 
+/*
+    CSoundInterval
+*/
+CSoundInterval::~CSoundInterval(){
+    if(data)
+        delete[] data;
+}
 
 /*
     CCharSound
 */
 
 CCharSound::CCharSound()
-{    
+{
     data=nullptr;
     intervals=nullptr;
     iSamplesCount=0;
@@ -74,7 +81,15 @@ unsigned int CCharSound::IntervalsCount(){
     return iIntervalsCount;
 }
 
-int CCharSound:: Size(){
+unsigned int CCharSound::SamplesPerInterval(){
+    return iSamplesPerInterval;
+}
+
+CSoundInterval* CCharSound::GetIntervals(){
+    return intervals;
+}
+
+unsigned int CCharSound:: Size(){
     return header.subchunk2Size;
 }
 
@@ -137,7 +152,7 @@ CWaveSample CCharSound::ValToSample(int value){
         case 16:
             s.sample16=value;
             break;
-        case 24:        
+        case 24:
             s.sample24=value;
             break;
         case 32:
@@ -233,6 +248,15 @@ void CCharSound::Normalize(short aligment, short rmswindow, short rmsoverlap, sh
     qDebug()<<"Done";
 }
 
+void CCharSound::GetFloatDataFromInterval(unsigned int i, double* array){
+    if(array==nullptr) return;
+    unsigned int k=intervals[i].begin;
+    unsigned int j(0);
+    for(unsigned int i=k;i<k+iSamplesPerInterval && i<Size();i++,j++){
+        array[j]=Data(i);
+    }
+}
+
 void CCharSound::FormIntervals(unsigned int msec, unsigned int overlap){
     if(data==nullptr) return;
     unsigned int samples=msec*(header.byteRate/ibytesPerSample/header.numChannels)/1000;
@@ -279,6 +303,7 @@ bool CCharSound::SaveIntervalsToFile(const char* filename){
     fjObject obj;
     obj.Set("SampleRate", header.sampleRate);
     obj.Set("BytesPerSample", ibytesPerSample);
+    obj.Set("PeakValue", iPeak);
     obj.Set("SamplesPerInterval",(int)iSamplesPerInterval);
     fjArray abc;
 
@@ -289,7 +314,8 @@ bool CCharSound::SaveIntervalsToFile(const char* filename){
             tobj.Set("Begin",make_shared<fjInt>(intervals[i].begin));
             fjArray tarr;
             for(unsigned int k=intervals[i].begin;k<=intervals[i].end;k++)
-                tarr.Add(Data(k));
+                tarr.Add((float)(Data(k)/(iPeak*0.5)));
+                //tarr.Add(Data(k));
             tobj.Set("Samples", make_shared<fjArray>(tarr));
             abc.Add(make_shared<fjObjValue>(tobj));
         }
@@ -301,10 +327,6 @@ bool CCharSound::SaveIntervalsToFile(const char* filename){
 }
 
 bool CCharSound::LoadIntervalsFromFile(const char* filename){
-    if(data==nullptr){
-        strcpy(lasterror,"Can't load intervals data while audio data is empty!");
-        return false;
-    }
 
     fjObject obj;
     obj.LoadFromFile(filename);
@@ -313,16 +335,19 @@ bool CCharSound::LoadIntervalsFromFile(const char* filename){
         strcpy(lasterror,"Wrong file format! SampleRate, BytesPerSample, SamplesPerInterval and Alphabet fields needed");
         return false;
     }
-    if(obj["SampleRate"]->asInt()!=header.sampleRate){
-        strcpy(lasterror,"Another SampleRate detected!");
-        return false;
-    }
-    if(obj["BytesPerSample"]->asInt()!=ibytesPerSample){
-        strcpy(lasterror,"Another BytesPerSample detected!");
-        return false;
+
+    if(data!=nullptr){
+        if(obj["SampleRate"]->asInt()!=header.sampleRate){
+            strcpy(lasterror,"Another SampleRate detected!");
+            return false;
+        }
+        if(obj["BytesPerSample"]->asInt()!=ibytesPerSample){
+            strcpy(lasterror,"Another BytesPerSample detected!");
+            return false;
+        }
     }
 
-    iSamplesPerInterval=obj["SamplesPerInterval"]->asInt();
+    iSamplesPerInterval=obj["SamplesPerInterval"]->asInt();    
 
     if(intervals)
         delete[] intervals;
@@ -337,10 +362,20 @@ bool CCharSound::LoadIntervalsFromFile(const char* filename){
         fjObjValue *tobj=(*abcarr)[k]->asfjObjValue().get();
         intervals[k].ch=(*tobj)["Char"]->asString();
 
-        //fjArray *subarr=(*tobj)["Samples"]->asfjArray().get();
+        fjArray *subarr=(*tobj)["Samples"]->asfjArray().get();
         //qDebug()<<"ch: "<<intervals[k].ch.c_str()<<" begin: "<<(*tobj)["Begin"]->asInt();
         intervals[k].begin=(*tobj)["Begin"]->asInt();
         intervals[k].end=intervals[k].begin+iSamplesPerInterval;
+
+        //load intervals data if sound data is empty
+        if(data==nullptr){
+            iPeak=obj["PeakValue"]->asInt();
+            intervals[k].data=new double[subarr->Size()];
+            for(unsigned int j=0;j<subarr->Size()-1;j++){
+                intervals[k].data[j]=(*subarr)[j]->asFloat();
+            }
+
+        }
     }
 
     return true;

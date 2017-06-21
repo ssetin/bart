@@ -80,7 +80,9 @@ struct CSoundInterval{
     unsigned int begin;
     unsigned int end;
     string ch;
-    CSoundInterval():begin(-1),end(-1),ch(""){}
+    double *data;
+    CSoundInterval():begin(-1),end(-1),ch(""), data(nullptr){}
+    ~CSoundInterval();
 };
 
 
@@ -118,13 +120,16 @@ public:
     float Duration();
     unsigned int SamplesCount();
     unsigned int IntervalsCount();
-    int Size();    
+    unsigned int SamplesPerInterval();
+    CSoundInterval* GetIntervals();
+    unsigned int Size();
     int Peak();
     bool IsSigned();
     short BytesPerSample();
     float SampleNoToSecond(unsigned int n);
-    CWaveTimer SampleNoToTime(unsigned int n);    
+    CWaveTimer SampleNoToTime(unsigned int n);
     void FormIntervals(unsigned int msec, unsigned int overlap);
+    void GetFloatDataFromInterval(unsigned int i, double* array);
     bool SaveIntervalsToFile(const char* filename);
     bool LoadIntervalsFromFile(const char* filename);
     void Normalize(short aligment=dBFS_ALIGMENT, short rmswindow=RMS_WINDOW, short rmsoverlap=RMS_OVERLAP, short silent=SILENT);

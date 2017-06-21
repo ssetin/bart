@@ -18,14 +18,18 @@ SOURCES += main.cpp\
     ccharsound.cpp \
     qmywaveview.cpp \
     ../fjay/fjson.cpp \
-    caudiocontroller.cpp
+    caudiocontroller.cpp \
+    cncontroller.cpp \
+    ../nnsimple/nnsimple.cpp
 
 HEADERS  += mainwindow.h \
     ccharsound.h \
     qmywaveview.h \
     caudiocontroller.h \
     ../fjay/fjson.h \
-    ui_mainwindow.h
+    ui_mainwindow.h \
+    cncontroller.h \
+    ../nnsimple/nnsimple.h
 
 FORMS    += mainwindow.ui
 

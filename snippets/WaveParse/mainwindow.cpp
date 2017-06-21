@@ -4,6 +4,8 @@
 #include <QDesktopWidget>
 #include <QDebug>
 
+#include "cncontroller.h"
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -146,3 +148,19 @@ void MainWindow::on_actionLoad_alphabet_triggered()
 
 
 
+
+void MainWindow::on_actionTeach_network_triggered(){
+    CNController cn;
+
+    cn.TeachAlphabets(QString(QDir::currentPath()+"/alphabet").toStdString().c_str());
+    cn.SaveWeights(QString(QDir::currentPath()+"/alphabet/result.nw").toStdString().c_str());
+}
+
+void MainWindow::on_actionLoad_network_triggered(){
+    CNController cn(AF_SIGMA);
+
+    cn.LoadSound(QString(QDir::currentPath()+"/speaking.wav").toStdString().c_str());
+
+    cn.LoadWeights(QString(QDir::currentPath()+"/alphabet/result.nw").toStdString().c_str());
+    cn.Recognize();
+}

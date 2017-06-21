@@ -2,7 +2,7 @@
  * Copyright 2016 Setin S.A.
 */
 
-#include <nnsimple.h>
+#include "nnsimple.h"
 #include <ctime>
 
 using namespace std;
@@ -59,6 +59,9 @@ int NNSimple::MaxY(){
     return ind;
 }
 
+/*!
+    Getting max value of y vector
+*/
 double NNSimple::MaxYVal(){
     double tmp(y[0]);
     for(int i=1;i<sizey;i++){
@@ -67,6 +70,27 @@ double NNSimple::MaxYVal(){
         }
     }
     return tmp;
+}
+
+/*!
+    Returns index of max value of y vector response. Taking into account the error
+*/
+int NNSimple::GetY(){
+    double tmp(y[0]);
+    int res(0);
+
+    for(int i=1;i<sizey;i++){
+        if(y[i]>tmp){
+            tmp=y[i];
+            res=i;
+        }
+    }
+
+    //if(tmp<1.0-e)
+    //    res=-1;
+
+    return res;
+
 }
 
 void NNSimple::PrintY(int precision){
@@ -81,14 +105,16 @@ void NNSimple::PrintY(int precision){
     \param[in] nsum - sum of neuron weights*input vector
 */
 double NNSimple::AFunction(double nsum){
+    //cout<<"AFunction("<<nsum<<")="<<1.0/(1.0+pow(M_E,-nsum))<<endl;
     if(afunction==AF_THRESH)
         return nsum>(sizey/2)?1:0;
-    return 1/(1+pow(M_E,-nsum));
+    return 1.0/(1.0+pow(M_E,-nsum));
 }
 
 
 void NNSimple::CorrectWeight(int j, double d){
     for(int i=0;i<sizex;i++){
+        //cout<<"w["<<i<<"]["<<j<<"] = "<<w[i][j]<<" + "<<d*x[i]<<endl;
         w[i][j]+=d*x[i];
     }
 }
@@ -179,11 +205,42 @@ void NNSimple::TeachSigma(double **voc, int stepscount){
                 while(0.5*((T-y[j])*(T-y[j]))>e){
                     d=n*(T-y[j]) * y[j] * (1-y[j]);
                     CorrectWeight(j,d*n);
-                    Process(voc[ind]);
-                    //cout<<"step = "<<step<<" ind = "<<ind<<" d = "<<d<<" e = "<<0.5*((T-y[j])*(T-y[j]))<<endl;
+                    Process(voc[ind]);                    
                 }
           }
     }
+}
+
+/*!
+    Load weights matrix from file
+    \param[in]  filename    file name
+*/void NNSimple::LoadWeights(const char *filename){
+    ifstream fstr(filename);
+
+    Clear();
+    fstr>>sizex>>sizey;
+    Init();
+
+    for(int i=0;i<sizex;i++)
+        for(int j=0;j<sizey;j++)
+            fstr>>w[i][j];
+
+    fstr.close();
+}
+
+/*!
+    Save weights matrix to file
+    \param[in]  filename    file name
+*/
+void NNSimple::SaveWeights(const char *filename){
+    ofstream fstr(filename);
+    fstr<<sizex<<" "<<sizey<<endl;
+
+    for(int i=0;i<sizex;i++)
+        for(int j=0;j<sizey;j++)
+            fstr<<w[i][j]<<" ";
+
+    fstr.close();
 }
 
 /*!

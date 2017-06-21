@@ -37,6 +37,8 @@ public:
     QAction *actionExit;
     QAction *actionSave_alphabet;
     QAction *actionLoad_alphabet;
+    QAction *actionTeach_network;
+    QAction *actionLoad_network;
     QWidget *centralWidget;
     QVBoxLayout *verticalLayout;
     QTabWidget *tabWidget;
@@ -54,6 +56,7 @@ public:
     QLineEdit *eIntervalOverlap;
     QMenuBar *menuBar;
     QMenu *menuFile;
+    QMenu *menuTools;
     QStatusBar *statusBar;
     QToolBar *toolBar;
 
@@ -80,6 +83,10 @@ public:
         actionSave_alphabet->setObjectName(QStringLiteral("actionSave_alphabet"));
         actionLoad_alphabet = new QAction(MainWindow);
         actionLoad_alphabet->setObjectName(QStringLiteral("actionLoad_alphabet"));
+        actionTeach_network = new QAction(MainWindow);
+        actionTeach_network->setObjectName(QStringLiteral("actionTeach_network"));
+        actionLoad_network = new QAction(MainWindow);
+        actionLoad_network->setObjectName(QStringLiteral("actionLoad_network"));
         centralWidget = new QWidget(MainWindow);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         verticalLayout = new QVBoxLayout(centralWidget);
@@ -211,6 +218,8 @@ public:
         menuBar->setNativeMenuBar(true);
         menuFile = new QMenu(menuBar);
         menuFile->setObjectName(QStringLiteral("menuFile"));
+        menuTools = new QMenu(menuBar);
+        menuTools->setObjectName(QStringLiteral("menuTools"));
         MainWindow->setMenuBar(menuBar);
         statusBar = new QStatusBar(MainWindow);
         statusBar->setObjectName(QStringLiteral("statusBar"));
@@ -220,12 +229,15 @@ public:
         MainWindow->addToolBar(Qt::TopToolBarArea, toolBar);
 
         menuBar->addAction(menuFile->menuAction());
+        menuBar->addAction(menuTools->menuAction());
         menuFile->addAction(actionOpen);
         menuFile->addSeparator();
         menuFile->addAction(actionLoad_alphabet);
         menuFile->addAction(actionSave_alphabet);
         menuFile->addSeparator();
         menuFile->addAction(actionExit);
+        menuTools->addAction(actionTeach_network);
+        menuTools->addAction(actionLoad_network);
 
         retranslateUi(MainWindow);
 
@@ -245,6 +257,8 @@ public:
         actionExit->setText(QApplication::translate("MainWindow", "Exit", 0));
         actionSave_alphabet->setText(QApplication::translate("MainWindow", "Save alphabet", 0));
         actionLoad_alphabet->setText(QApplication::translate("MainWindow", "Load alphabet", 0));
+        actionTeach_network->setText(QApplication::translate("MainWindow", "Teach network", 0));
+        actionLoad_network->setText(QApplication::translate("MainWindow", "Recognize", 0));
         tabWidget->setTabText(tabWidget->indexOf(tab), QApplication::translate("MainWindow", "Wave", 0));
         tabWidget->setTabText(tabWidget->indexOf(tab_2), QApplication::translate("MainWindow", "Log", 0));
         lZoom->setText(QApplication::translate("MainWindow", "<b>Zoom</b>: 1", 0));
@@ -268,6 +282,7 @@ public:
 #endif // QT_NO_TOOLTIP
         eIntervalOverlap->setText(QApplication::translate("MainWindow", "20", 0));
         menuFile->setTitle(QApplication::translate("MainWindow", "File", 0));
+        menuTools->setTitle(QApplication::translate("MainWindow", "Tools", 0));
         toolBar->setWindowTitle(QApplication::translate("MainWindow", "toolBar", 0));
     } // retranslateUi
 
