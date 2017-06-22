@@ -1,7 +1,8 @@
-### Bartholomew
------------------------------------
+Bartholomew
+===========
 
-####snippets
+snippets
+--------
 ```
 nnsimple - simple artificial neural network
 ```
