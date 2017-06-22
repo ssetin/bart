@@ -1,7 +1,6 @@
 ## Bartholomew
 
-the essay
-draft
+the essay, draft
 
 ### snippets
 
