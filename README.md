@@ -1,10 +1,9 @@
 ## Bartholomew
---------------
 
 the essay
 draft
 
-###snippets
+### snippets
 
 ```
 nnsimple  - simple artificial neural network
