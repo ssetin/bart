@@ -292,7 +292,7 @@
        <enum>Qt::LeftToRight</enum>
       </property>
       <property name="text">
-       <string>70</string>
+       <string>30</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -311,7 +311,7 @@
        <string>Overlap, msec</string>
       </property>
       <property name="text">
-       <string>20</string>
+       <string>10</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>

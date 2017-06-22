@@ -276,11 +276,11 @@ public:
 #ifndef QT_NO_WHATSTHIS
         eInterval->setWhatsThis(QString());
 #endif // QT_NO_WHATSTHIS
-        eInterval->setText(QApplication::translate("MainWindow", "70", 0));
+        eInterval->setText(QApplication::translate("MainWindow", "30", 0));
 #ifndef QT_NO_TOOLTIP
         eIntervalOverlap->setToolTip(QApplication::translate("MainWindow", "Overlap, msec", 0));
 #endif // QT_NO_TOOLTIP
-        eIntervalOverlap->setText(QApplication::translate("MainWindow", "20", 0));
+        eIntervalOverlap->setText(QApplication::translate("MainWindow", "10", 0));
         menuFile->setTitle(QApplication::translate("MainWindow", "File", 0));
         menuTools->setTitle(QApplication::translate("MainWindow", "Tools", 0));
         toolBar->setWindowTitle(QApplication::translate("MainWindow", "toolBar", 0));

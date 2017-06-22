@@ -18,7 +18,8 @@ enum Activate_Function {AF_THRESH, AF_SIGMA};
     y - output signal vector
     n - speed of teaching
     e - inaccuracy
-    s - border of significance
+    e0 - "zero"
+    s - sensitivity (border of significance)
     afunction - activate function
 */
 class NNSimple{
@@ -27,6 +28,7 @@ protected:
     double *x;
     double *y;
     double e;
+    double e0;
     double s;
     int sizex, sizey;
     double n;
@@ -43,10 +45,11 @@ public:
     NNSimple(Activate_Function nfunce=AF_THRESH);
     virtual ~NNSimple();
     virtual int Process(double *inputx);
-    virtual void PrintY(int precision=10);
+    virtual void PrintY(int precision=10);    
     virtual int  GetY();
     virtual void SetE(double ne);
     virtual void SetN(double nn);
+    virtual void SetSensitivity(double ns);
     virtual void Teach(const char *filename, int stepscount);
     virtual void LoadWeights(const char *filename);
     virtual void SaveWeights(const char *filename);

@@ -7,7 +7,7 @@
 CNController::CNController(Activate_Function nfunce): NNSimple(nfunce){
     n=0.00001;
     s=0.5;
-    e=0.1;
+    e=0.0001;
     sAlphabet=nullptr;
 }
 
@@ -33,12 +33,11 @@ void CNController::TeachSigma(CSoundInterval *voc, int stepscount){
     double d(1), T(0);
     srand(time(NULL));
 
-    qDebug()<<"Steps="<<stepscount;
 
     for(step=0;step<steps;step++){
           ind=rand()%sizey;
-          if(step%50000==0)
-              qDebug()<<step<<"...";
+          if(step%3000==0)
+              qDebug()<<step<<" / "<<stepscount;
 
           Process(voc[ind].data);
 
@@ -49,8 +48,7 @@ void CNController::TeachSigma(CSoundInterval *voc, int stepscount){
 
                 while(0.5*((T-y[j])*(T-y[j]))>e){
                     d=n*(T-y[j]) * y[j] * (1.0-y[j]);
-                    if(abs(d)<=0.0000000001){
-                        //cout<<"fail"<<endl;
+                    if(abs(d)<=e0){
                         break;
                     }
                     //qDebug()<<"d="<<d<<" j="<<j<<" y[j]="<<y[j]<<" T="<<T;
@@ -62,7 +60,7 @@ void CNController::TeachSigma(CSoundInterval *voc, int stepscount){
 }
 
 void CNController::TeachAlphabet(string filename){
-    int stepscount(500000);
+    int stepscount(100000);
 
     snd.LoadIntervalsFromFile(filename.c_str());
 
@@ -105,7 +103,10 @@ void CNController::TeachAlphabets(const string path){
 
 void CNController::LoadSound(const string filename){
     snd.LoadFromFile(filename.c_str());
-    snd.Normalize();
+    //snd.Normalize();
+
+    //e=snd.Silent()/(1.0*snd.Peak())*0.1;
+    //n=e*0.5;
 }
 
 /*!
@@ -116,7 +117,7 @@ void CNController::LoadWeights(const char *filename){
     ifstream fstr(filename);
 
     Clear();
-    fstr>>sizey>>sizex;
+    fstr>>sizex>>sizey;
     Init();
 
     sAlphabet=new string[sizey];
@@ -136,7 +137,7 @@ void CNController::LoadWeights(const char *filename){
 */
 void CNController::SaveWeights(const char *filename){
     ofstream fstr(filename);
-    fstr<<sizey<<" "<<sizex<<endl;
+    fstr<<sizex<<" "<<sizey<<endl;
 
     for(int i=0;i<sizey;i++)
         fstr<<sAlphabet[i]<<endl;
@@ -148,45 +149,43 @@ void CNController::SaveWeights(const char *filename){
     fstr.close();
 }
 
-string CNController::GetAnswer(){
-    int a(-1);
-    string res("");
-    a=GetY();
-    qDebug()<<"a = "<<a;
-    if(sAlphabet && a>=0)
-        res=sAlphabet[a];
+string CNController::GetAnswer(int idx){
+    string res("");    
+    if(sAlphabet && idx>=0)
+        res=sAlphabet[idx];
     return res;
 }
 
 
-void CNController::Recognize(){
-    unsigned int i(0), size(0);
+string CNController::Recognize(){
+    unsigned int i(0), size(0), res(-1);
     string result("");
 
     if(snd.Size()==0)
-        return;
+        return "";
 
-    snd.FormIntervals(70,20);
+    snd.FormIntervals(30,10);
 
     if(snd.IntervalsCount()==0)
-        return;
+        return "";
 
     size=snd.SamplesPerInterval();
     if(size==0)
-        return;
+        return "";
 
     double *data=new double[size];
 
     for(i=0;i<snd.IntervalsCount();i++){
         snd.GetFloatDataFromInterval(i,data);
-        Process(data);
+        res=Process(data);
         //PrintY();
-        result+=GetAnswer();
+        result+=GetAnswer(res);
     }
 
     qDebug()<<"Answer = "<<result.c_str();
 
     delete[] data;
 
+    return result;
 }
 

@@ -20,7 +20,7 @@
 #define dBFS_ALIGMENT   16
 #define RMS_WINDOW      80
 #define RMS_OVERLAP     40
-#define SILENT          32
+#define SILENT          55
 
 
 using namespace std;
@@ -91,6 +91,7 @@ struct CSoundInterval{
 */
 class CCharSound
 {
+protected:
     WAVHEADER header;
     float  fDuration;
     unsigned int iSamplesCount;
@@ -124,6 +125,7 @@ public:
     CSoundInterval* GetIntervals();
     unsigned int Size();
     int Peak();
+    double Silent();
     bool IsSigned();
     short BytesPerSample();
     float SampleNoToSecond(unsigned int n);

@@ -159,8 +159,8 @@ void MainWindow::on_actionTeach_network_triggered(){
 void MainWindow::on_actionLoad_network_triggered(){
     CNController cn(AF_SIGMA);
 
-    cn.LoadSound(QString(QDir::currentPath()+"/speaking.wav").toStdString().c_str());
-
+    cn.LoadSound(QString(QDir::currentPath()+"/talk44.wav").toStdString().c_str());
     cn.LoadWeights(QString(QDir::currentPath()+"/alphabet/result.nw").toStdString().c_str());
+    cn.SetSensitivity(0.6);
     cn.Recognize();
 }

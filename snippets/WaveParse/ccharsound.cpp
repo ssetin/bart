@@ -107,6 +107,10 @@ int CCharSound::Peak(){
     return iPeak;
 }
 
+double CCharSound::Silent(){
+    return DBFSToVolume(SILENT);
+}
+
 bool CCharSound::IsSigned(){
     return bSigned;
 }

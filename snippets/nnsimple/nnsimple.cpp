@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2016 Setin S.A.
 */
 
@@ -9,8 +9,9 @@ using namespace std;
 
 NNSimple::NNSimple(Activate_Function nfunc){
     n=0.5;
-    s=0.5;
+    s=0.6;
     e=0.001;
+    e0=0.00000001;
     afunction=nfunc;
     sizex=0;
     sizey=0;
@@ -45,6 +46,10 @@ void NNSimple::SetE(double ne){
 */
 void NNSimple::SetN(double nn){
     n=nn;
+}
+
+void NNSimple::SetSensitivity(double ns){
+    s=ns;
 }
 
 int NNSimple::MaxY(){
@@ -85,10 +90,6 @@ int NNSimple::GetY(){
             res=i;
         }
     }
-
-    //if(tmp<1.0-e)
-    //    res=-1;
-
     return res;
 
 }
@@ -105,7 +106,6 @@ void NNSimple::PrintY(int precision){
     \param[in] nsum - sum of neuron weights*input vector
 */
 double NNSimple::AFunction(double nsum){
-    //cout<<"AFunction("<<nsum<<")="<<1.0/(1.0+pow(M_E,-nsum))<<endl;
     if(afunction==AF_THRESH)
         return nsum>(sizey/2)?1:0;
     return 1.0/(1.0+pow(M_E,-nsum));
@@ -114,7 +114,6 @@ double NNSimple::AFunction(double nsum){
 
 void NNSimple::CorrectWeight(int j, double d){
     for(int i=0;i<sizex;i++){
-        //cout<<"w["<<i<<"]["<<j<<"] = "<<w[i][j]<<" + "<<d*x[i]<<endl;
         w[i][j]+=d*x[i];
     }
 }
@@ -204,6 +203,9 @@ void NNSimple::TeachSigma(double **voc, int stepscount){
 
                 while(0.5*((T-y[j])*(T-y[j]))>e){
                     d=n*(T-y[j]) * y[j] * (1-y[j]);
+                    if(fabs(d)<=e0){
+                        break;
+                    }
                     CorrectWeight(j,d*n);
                     Process(voc[ind]);                    
                 }
@@ -214,7 +216,8 @@ void NNSimple::TeachSigma(double **voc, int stepscount){
 /*!
     Load weights matrix from file
     \param[in]  filename    file name
-*/void NNSimple::LoadWeights(const char *filename){
+*/
+void NNSimple::LoadWeights(const char *filename){
     ifstream fstr(filename);
 
     Clear();
@@ -258,7 +261,7 @@ void NNSimple::Teach(const char *filename, int stepscount){
     }
 
     double **voc=NULL;
-    fstr>>sizey>>sizex;
+    fstr>>sizex>>sizey;
     Init();
 
     voc=new double*[sizey];

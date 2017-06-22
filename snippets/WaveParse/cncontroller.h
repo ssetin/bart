@@ -8,18 +8,18 @@
 class CNController:public NNSimple{
 protected:
     CCharSound snd;
-    string *sAlphabet;
-    virtual void TeachAlphabet(string filename);
+    string *sAlphabet;    
+    virtual string GetAnswer(int idx);
+    virtual void TeachSigma(CSoundInterval *voc, int stepscount);
 public:
     CNController(Activate_Function nfunce=AF_SIGMA);
     virtual ~CNController();
     virtual void LoadWeights(const char *filename);
     virtual void SaveWeights(const char *filename);
-    virtual void TeachAlphabets(const string path);
-    virtual void TeachSigma(CSoundInterval *voc, int stepscount);
+    virtual void TeachAlphabet(string filename);
+    virtual void TeachAlphabets(const string path);    
     virtual void LoadSound(const string filename);
-    virtual void Recognize();
-    virtual string GetAnswer();
+    virtual string Recognize();
 };
 
 #endif // CNCONTROLLER_H
