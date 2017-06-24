@@ -10,6 +10,7 @@
 #include<memory>
 #include<iostream>
 #include<fstream>
+#include<stdlib.h>
 
 using namespace std;
 
@@ -24,15 +25,20 @@ enum eStringIs{SI_STRING, SI_INT, SI_FLOAT, SI_ARRAY, SI_OBJECT};
 
 eStringIs DetectType(string &value);
 string trimstr(const string& str);
+/*
+   fix dependency of decimal_point from locale
+*/
+void fixDecimalPoint();
+
 
 /*
- * fjValue - base fj value type
+  fjValue - base fj value type
 */
 class fjValue{
 protected:
     int level;
 public:
-    fjValue():level(0){}
+    fjValue():level(0){fixDecimalPoint();}
 
     virtual string asString(bool quotes=false)const=0;
     virtual shared_ptr<fjArray> asfjArray()=0;

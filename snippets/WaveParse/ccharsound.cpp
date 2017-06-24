@@ -375,10 +375,9 @@ bool CCharSound::LoadIntervalsFromFile(const char* filename){
         if(data==nullptr){
             iPeak=obj["PeakValue"]->asInt();
             intervals[k].data=new double[subarr->Size()];
-            for(unsigned int j=0;j<subarr->Size()-1;j++){
+            for(unsigned int j=0;j<subarr->Size();j++){
                 intervals[k].data[j]=(*subarr)[j]->asFloat();
             }
-
         }
     }
 

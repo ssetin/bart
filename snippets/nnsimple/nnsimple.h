@@ -1,5 +1,9 @@
 /*
  * Copyright 2016 Setin S.A.
+ *
+ * TODO:
+ * - few layers
+ * - cuda support
 */
 
 #include <iostream>
@@ -7,7 +11,10 @@
 #include <fstream>
 
 enum Activate_Function {AF_THRESH, AF_SIGMA};
-//const double M_E=2.718281828459;
+
+#ifdef _WIN32
+    const double M_E=2.718281828459;
+#endif
 
 /*!
     Simple artificial neural network

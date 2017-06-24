@@ -5,9 +5,10 @@
 #include<QDebug>
 
 CNController::CNController(Activate_Function nfunce): NNSimple(nfunce){
-    n=0.00001;
-    s=0.5;
-    e=0.0001;
+    n= 0.3;
+    s= 0.5;
+    e= 0.01;
+    e0=0.000001;
     sAlphabet=nullptr;
 }
 
@@ -36,8 +37,8 @@ void CNController::TeachSigma(CSoundInterval *voc, int stepscount){
 
     for(step=0;step<steps;step++){
           ind=rand()%sizey;
-          if(step%3000==0)
-              qDebug()<<step<<" / "<<stepscount;
+          if(step%50==0)
+              qDebug()<<step<<" of "<<stepscount;
 
           Process(voc[ind].data);
 
@@ -59,8 +60,12 @@ void CNController::TeachSigma(CSoundInterval *voc, int stepscount){
     }
 }
 
+/*!
+    Process one alphabet
+    \param[in]  filename file with chars and samples
+*/
 void CNController::TeachAlphabet(string filename){
-    int stepscount(100000);
+    int stepscount(10000);
 
     snd.LoadIntervalsFromFile(filename.c_str());
 
@@ -81,6 +86,11 @@ void CNController::TeachAlphabet(string filename){
     qDebug()<<"teach "<<filename.c_str()<<" done.";
 }
 
+
+/*!
+    Processing few alphabets to generate general matrix of weights
+    \param[in]  path path, where alphabets located
+*/
 void CNController::TeachAlphabets(const string path){
     DIR *dir = opendir(path.c_str());
     string fname;
@@ -98,15 +108,11 @@ void CNController::TeachAlphabets(const string path){
     }
 
     closedir(dir);
-
 }
 
 void CNController::LoadSound(const string filename){
     snd.LoadFromFile(filename.c_str());
     //snd.Normalize();
-
-    //e=snd.Silent()/(1.0*snd.Peak())*0.1;
-    //n=e*0.5;
 }
 
 /*!
@@ -150,7 +156,7 @@ void CNController::SaveWeights(const char *filename){
 }
 
 string CNController::GetAnswer(int idx){
-    string res("");    
+    string res(" ");
     if(sAlphabet && idx>=0)
         res=sAlphabet[idx];
     return res;

@@ -5,13 +5,14 @@
 #include "nnsimple.h"
 #include <ctime>
 
+
 using namespace std;
 
 NNSimple::NNSimple(Activate_Function nfunc){
     n=0.5;
     s=0.6;
     e=0.001;
-    e0=0.00000001;
+    e0=0.0000001;
     afunction=nfunc;
     sizex=0;
     sizey=0;
@@ -48,6 +49,10 @@ void NNSimple::SetN(double nn){
     n=nn;
 }
 
+/*!
+    Setting sensitivity (border of significance)
+    \param[in]  ns new sensitivity
+*/
 void NNSimple::SetSensitivity(double ns){
     s=ns;
 }

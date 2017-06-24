@@ -1,3 +1,11 @@
+/*
+ * Copyright 2017 Setin S.A.
+ *
+ * TODO:
+ * - processing few alphabets
+ * - result correction
+*/
+
 #ifndef CNCONTROLLER_H
 #define CNCONTROLLER_H
 

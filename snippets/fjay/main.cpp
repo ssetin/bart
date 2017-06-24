@@ -15,6 +15,7 @@ int main(int argc, char *argv[])
     fjArray fa;
     float s=1.5;
     fa.Add(s);
+    fa.Add(2.345667f);
     fa.Add(2);
     fa.Add("char*");
     fa.Add(90);
@@ -34,6 +35,10 @@ int main(int argc, char *argv[])
     //**************************************************
     cout<<"json test"<<endl;
     fjObject json;
+
+    json.Set("MyArray",make_shared<fjArray>(fa));
+
+    json.SaveToFile("temp.json");
 
     cout << "Size: "<<json.Size() << endl;
     json.Set("me","hoha");

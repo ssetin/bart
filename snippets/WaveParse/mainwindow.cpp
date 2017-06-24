@@ -161,6 +161,6 @@ void MainWindow::on_actionLoad_network_triggered(){
 
     cn.LoadSound(QString(QDir::currentPath()+"/talk44.wav").toStdString().c_str());
     cn.LoadWeights(QString(QDir::currentPath()+"/alphabet/result.nw").toStdString().c_str());
-    cn.SetSensitivity(0.6);
+    cn.SetSensitivity(0.65);
     cn.Recognize();
 }

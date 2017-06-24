@@ -3,6 +3,8 @@
 */
 
 #include"fjson.h"
+#include <algorithm>
+#include<locale>
 
 #define nocheck
 
@@ -11,6 +13,15 @@ using namespace std;
 /*
     helpers
 */
+void fixDecimalPoint(){
+    static bool init(false);
+    if(init)
+        return;
+    setlocale(LC_NUMERIC, "C");
+    init=true;
+}
+
+
 string trimstr(const string& str)
 {
     size_t first = str.find_first_not_of(" \n\t");
@@ -223,13 +234,14 @@ fjFloat& fjFloat::operator=(fjFloat &&a){
 }
 
 
-string fjFloat::asString(bool) const{
+string fjFloat::asString(bool) const{    
     return std::to_string(value);
 }
 
 shared_ptr<fjArray> fjFloat::asfjArray(){
     return make_shared<fjArray>("["+to_string(value)+"]");
 }
+
 float fjFloat::asFloat() const {
     return value;
 }
@@ -373,9 +385,11 @@ fjArray& fjArray::operator=(fjArray &&a){
 
 void fjArray::AddValue(string &value){
     eStringIs tp=DetectType(value);
+
 #ifdef check
     cout<<"AddValue[]("<<value<<")"<<endl;
 #endif
+
     switch(tp){
         case SI_STRING:            
             Add(value);
@@ -383,7 +397,7 @@ void fjArray::AddValue(string &value){
         case SI_INT:
             Add(atoi(value.c_str()));
             break;
-        case SI_FLOAT:
+        case SI_FLOAT:                    
             Add((float)atof(value.c_str()));
             break;
         case SI_ARRAY:
