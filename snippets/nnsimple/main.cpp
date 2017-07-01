@@ -7,7 +7,7 @@ int main()
 {
     NNSimple nn(AF_SIGMA);
     cout<<"Teaching..."<<endl;
-    nn.Teach("teach.txt",100000);
+    nn.Teach("teach.txt",1000);
     cout<<"Done"<<endl;
 
     /*
@@ -19,7 +19,7 @@ int main()
     double a3[15]={1,1,1,0,0,1,1,1,1,0,0,1,1,1,1};
 
     double a4[15]={1,0,1,1,0,1,1,1,1,0,0,1,0,0,1};
-    double b4[15]={1,1,1,1,0,1,1,1,1,0,0,1,0,0,1};
+    double b4[15]={1,0.8,1,1,0,1,1,1,1,0,0,1,0,0,1};
 
     double a5[15]={1,1,1,1,0,0,1,1,1,0,0,1,1,1,1};
     double a6[15]={1,1,1,1,0,0,1,1,1,1,0,1,1,1,1};
@@ -31,6 +31,10 @@ int main()
     nn.PrintY();
     cout<<"noise 4 -> "<<nn.Process(b4)<<endl;
     nn.PrintY();
+
+    //nn.PrintW(2);
+    //cout<<"w[0,1]="<<nn.w[0][1]<<endl;
+    //cout<<"w[1,1]="<<nn.w[1][1]<<endl;
 
     cout << "End!" << endl;
     return 0;
