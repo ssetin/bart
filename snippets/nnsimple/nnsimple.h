@@ -2,8 +2,8 @@
  * Copyright 2016 Setin S.A.
  *
  * TODO:
+ * - supporting CUDA, optimize data structures and gpu memory usage
  * - few layers
- * - cuda support
 */
 
 #include <iostream>
@@ -20,9 +20,9 @@
 
 enum Activate_Function {AF_THRESH, AF_SIGMA};
 
-extern "C" void allocateobjects_cuda(const int sizex, const int sizey, double** w);
-extern "C" void freeobjects_cuda();
-extern "C" void correctweight_cuda(double **w,const double *x,const int sizex, const int sizey,const int row,const double d);
+extern "C" bool allocateobjects_cuda(const int sizex, const int sizey, double** w);
+extern "C" bool freeobjects_cuda();
+extern "C" bool correctweight_cuda(double **w,const double *x,const int sizex, const int sizey,const int row,const double d);
 
 /*!
     Simple artificial neural network

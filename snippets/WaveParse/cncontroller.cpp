@@ -4,11 +4,11 @@
 
 #include<QDebug>
 
-CNController::CNController(Activate_Function nfunce): NNSimple(nfunce){
-    n= 0.3;
+CNController::CNController(Activate_Function nfunce, bool tryuse_cuda): NNSimple(nfunce, tryuse_cuda){
+    n= 0.5;
     s= 0.5;
     e= 0.01;
-    e0=0.000001;
+    e0=1e-5;
     sAlphabet=nullptr;
 }
 
@@ -29,31 +29,31 @@ CNController::~CNController(){
     \param[in]  stepscount  count of iterations
 */
 void CNController::TeachSigma(CSoundInterval *voc, int stepscount){
-    int j(0), step(0);
+    int row(0), step(0);
     int steps(stepscount), ind(0);
-    double d(1), T(0);
+    double d(1.0), T(0.0);
     srand(time(NULL));
 
 
     for(step=0;step<steps;step++){
           ind=rand()%sizey;
-          if(step%50==0)
+          if(step%(stepscount/100)==0)
               qDebug()<<step<<" of "<<stepscount;
 
           Process(voc[ind].data);
 
-          for(j=0;j<sizey;j++){                
-                if(ind==j)
+          for(row=0;row<sizey;row++){
+                if(ind==row)
                     T=1.0;
                 else T=0.0;
 
-                while(0.5*((T-y[j])*(T-y[j]))>e){
-                    d=n*(T-y[j]) * y[j] * (1.0-y[j]);
+                while(0.5*((T-y[row])*(T-y[row]))>e){
+                    d=n*(T-y[row]) * y[row] * (1.0-y[row]);
                     if(abs(d)<=e0){
                         break;
                     }
                     //qDebug()<<"d="<<d<<" j="<<j<<" y[j]="<<y[j]<<" T="<<T;
-                    CorrectWeight(j,d*n);
+                    CorrectWeight(row,d*n);
                     Process(voc[ind].data);                    
                 }
           }
@@ -65,7 +65,7 @@ void CNController::TeachSigma(CSoundInterval *voc, int stepscount){
     \param[in]  filename file with chars and samples
 */
 void CNController::TeachAlphabet(string filename){
-    int stepscount(10000);
+    int stepscount(1000);
 
     snd.LoadIntervalsFromFile(filename.c_str());
 
@@ -75,10 +75,11 @@ void CNController::TeachAlphabet(string filename){
     if(sizey==0) return;
     sAlphabet=new string[sizey];
 
-    for(int i=0;i<sizey;i++)
-        sAlphabet[i]=snd.GetIntervals()[i].ch;
+    for(int row=0;row<sizey;row++)
+        sAlphabet[row]=snd.GetIntervals()[row].ch;
 
     sizex=snd.SamplesPerInterval();
+    cout<<"Pre init "<<sizex<<" "<<sizey<<endl;
     Init();
 
     TeachSigma(snd.GetIntervals(),stepscount);
@@ -127,12 +128,12 @@ void CNController::LoadWeights(const char *filename){
     Init();
 
     sAlphabet=new string[sizey];
-    for(int i=0;i<sizey;i++)
-        fstr>>sAlphabet[i];
+    for(int row=0;row<sizey;row++)
+        fstr>>sAlphabet[row];
 
-    for(int i=0;i<sizex;i++)
-        for(int j=0;j<sizey;j++)
-            fstr>>w[i][j];
+    for(int row=0;row<sizey;row++)
+        for(int col=0;col<sizex;col++)
+            fstr>>w[row][col];
 
     fstr.close();
 }
@@ -143,14 +144,16 @@ void CNController::LoadWeights(const char *filename){
 */
 void CNController::SaveWeights(const char *filename){
     ofstream fstr(filename);
+
     fstr<<sizex<<" "<<sizey<<endl;
 
-    for(int i=0;i<sizey;i++)
-        fstr<<sAlphabet[i]<<endl;
+    for(int row=0;row<sizey;row++)
+        fstr<<sAlphabet[row]<<endl;
 
-    for(int i=0;i<sizex;i++)
-        for(int j=0;j<sizey;j++)
-            fstr<<w[i][j]<<" ";
+    for(int row=0;row<sizey;row++){
+        for(int col=0;col<sizex;col++)
+            fstr<<w[row][col]<<' ';
+    }
 
     fstr.close();
 }

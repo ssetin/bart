@@ -20,7 +20,8 @@ protected:
     virtual string GetAnswer(int idx);
     virtual void TeachSigma(CSoundInterval *voc, int stepscount);
 public:
-    CNController(Activate_Function nfunce=AF_SIGMA);
+    CNController()=delete;
+    CNController(Activate_Function nfunce=AF_SIGMA,bool tryuse_cuda=true);
     virtual ~CNController();
     virtual void LoadWeights(const char *filename);
     virtual void SaveWeights(const char *filename);

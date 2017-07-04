@@ -59,10 +59,12 @@ void NNSimple::Init(){
     }
     for(int row=0;row<sizey;row++)
         for(int col=0;col<sizex;col++)
-            w[row][col]=0;
+            w[row][col]=0.0;
 
-    if(use_cuda)
-        allocateobjects_cuda(sizex,sizey,w);
+    if(use_cuda){
+        if(!allocateobjects_cuda(sizex,sizey,w))
+            use_cuda=false;
+    }
 }
 
 /*!
@@ -166,7 +168,9 @@ void NNSimple::CorrectWeight(int row, double d){
             w[row][col]+=d*x[col];
         }
     }else{
-        correctweight_cuda(w,x,sizex,sizey,row,d);
+        if(!correctweight_cuda(w,x,sizex,sizey,row,d)){
+            use_cuda=false;
+        }
     }
 }
 
@@ -181,8 +185,9 @@ void NNSimple::Clear(){
     }
     sizex=0;
     sizey=0;
-    if(use_cuda)
+    if(use_cuda){
         freeobjects_cuda();
+    }
 }
 
 NNSimple::~NNSimple(){
@@ -194,7 +199,7 @@ int NNSimple::Process(double *inputx){
     if(inputx==NULL) return -1;
     x=inputx;
     for(int row=0;row<sizey;row++){
-        double sum(0);
+        double sum(0.0);
         for(int col=0;col<sizex;col++){
             sum+=x[col]*w[row][col];
         }
@@ -215,7 +220,7 @@ int NNSimple::Process(double *inputx){
 void NNSimple::TeachThresh(double **voc, int stepscount){
     int row(0), step(0);
     int steps(stepscount), ind(0);
-    double d(0), T(0);
+    double d(0.0), T(0.0);
     srand(time(NULL));
 
     for(step=0;step<steps;step++){
@@ -223,8 +228,8 @@ void NNSimple::TeachThresh(double **voc, int stepscount){
           Process(voc[ind]);
           for(row=0;row<sizey;row++){
               if(ind==row)
-                  T=1;
-              else T=0;
+                  T=1.0;
+              else T=0.0;
               d=T-y[row];
               CorrectWeight(row,d);
           }
@@ -244,7 +249,7 @@ void NNSimple::TeachThresh(double **voc, int stepscount){
 void NNSimple::TeachSigma(double **voc, int stepscount){
     int row(0), step(0);
     int steps(stepscount), ind(0);
-    double d(1), T(0),currente(0);
+    double d(1.0), T(0.0),currente(0.0);
     srand(time(NULL));
 
     for(step=0;step<steps;step++){
@@ -254,11 +259,11 @@ void NNSimple::TeachSigma(double **voc, int stepscount){
 
           for(row=0;row<sizey;row++){
                 if(ind==row)
-                    T=1;
-                else T=0;
+                    T=1.0;
+                else T=0.0;
 
                 while((currente=0.5*((T-y[row])*(T-y[row])))>e){
-                    d=n * (T-y[row]) * y[row] * (1-y[row]);
+                    d=n * (T-y[row]) * y[row] * (1.0-y[row]);
 
                     if(fabs(d)<=e0){
                         break;
@@ -298,8 +303,7 @@ void NNSimple::SaveWeights(const char *filename){
 
     for(int row=0;row<sizey;row++){
         for(int col=0;col<sizex;col++)
-            fstr<<w[row][col]<<" ";
-        fstr<<endl;
+            fstr<<w[row][col]<<' ';
     }
 
     fstr.close();
@@ -324,6 +328,7 @@ void NNSimple::Teach(const char *filename, int stepscount){
     Init();
 
     voc=new double*[sizey];
+
     for(row=0;row<sizey;row++)
         voc[row]=new double[sizex];
 

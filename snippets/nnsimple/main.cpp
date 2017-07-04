@@ -7,7 +7,7 @@ int main()
 {
     NNSimple nn(AF_SIGMA);
     cout<<"Teaching..."<<endl;
-    nn.Teach("teach.txt",1000);
+    nn.Teach("teach.txt",500);
     cout<<"Done"<<endl;
 
     /*
