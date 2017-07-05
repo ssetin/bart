@@ -65,7 +65,7 @@ void CNController::TeachSigma(CSoundInterval *voc, int stepscount){
     \param[in]  filename file with chars and samples
 */
 void CNController::TeachAlphabet(string filename){
-    int stepscount(1000);
+    int stepscount(100);
 
     snd.LoadIntervalsFromFile(filename.c_str());
 
@@ -79,7 +79,6 @@ void CNController::TeachAlphabet(string filename){
         sAlphabet[row]=snd.GetIntervals()[row].ch;
 
     sizex=snd.SamplesPerInterval();
-    cout<<"Pre init "<<sizex<<" "<<sizey<<endl;
     Init();
 
     TeachSigma(snd.GetIntervals(),stepscount);

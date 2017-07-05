@@ -39,7 +39,8 @@ NNSimple::NNSimple(Activate_Function nfunc, bool tryuse_cuda){
             printf("cudaGetDeviceProperties returned error %s (code %d), line(%d)\n", cudaGetErrorString(error), error, __LINE__);
             use_cuda=false;
         }else{
-            printf("Using GPU Device %d: \"%s\" with compute capability %d.%d\n\n", devID, deviceProp.name, deviceProp.major, deviceProp.minor);
+            printf("Using GPU Device %d: \"%s\" with compute capability %d.%d\n", devID, deviceProp.name, deviceProp.major, deviceProp.minor);
+            //printf("maxThreadsPerBlock=%d sharedMemPerBlock=%d totalGlobalMem=%d K\n\n", deviceProp.maxThreadsPerBlock, deviceProp.sharedMemPerBlock,deviceProp.totalGlobalMem/1024);
         }
     }
 
@@ -168,7 +169,7 @@ void NNSimple::CorrectWeight(int row, double d){
             w[row][col]+=d*x[col];
         }
     }else{
-        if(!correctweight_cuda(w,x,sizex,sizey,row,d)){
+        if(!correctweight_cuda(w,sizex,sizey,row,d)){
             use_cuda=false;
         }
     }
@@ -198,6 +199,9 @@ NNSimple::~NNSimple(){
 int NNSimple::Process(double *inputx){
     if(inputx==NULL) return -1;
     x=inputx;
+    if(use_cuda)
+        setx_cuda(sizex, x);
+
     for(int row=0;row<sizey;row++){
         double sum(0.0);
         for(int col=0;col<sizex;col++){

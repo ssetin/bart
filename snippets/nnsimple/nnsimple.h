@@ -20,9 +20,10 @@
 
 enum Activate_Function {AF_THRESH, AF_SIGMA};
 
-extern "C" bool allocateobjects_cuda(const int sizex, const int sizey, double** w);
+extern "C" bool allocateobjects_cuda(const int sizex, const int sizey, double **w);
+extern "C" bool setx_cuda(const int sizex, double* x);
 extern "C" bool freeobjects_cuda();
-extern "C" bool correctweight_cuda(double **w,const double *x,const int sizex, const int sizey,const int row,const double d);
+extern "C" bool correctweight_cuda(double **w,const int sizex, const int sizey,const int row,const double d);
 
 /*!
     Simple artificial neural network
