@@ -9,8 +9,8 @@ const int BLOCK_SIZE=256;
     vectors for processing in gpu memory
 */
 namespace cuda_data{
-    double *dev_w;
-    double *dev_x;
+    double *dev_w=NULL;
+    double *dev_x=NULL;
 }
 
 /*!
@@ -56,8 +56,7 @@ extern "C" bool freeobjects_cuda(){
 /*!
     Allocate cuda_data
 */
-extern "C" bool allocateobjects_cuda(const int sizex, const int sizey, double **w){
-
+extern "C" bool allocateobjects_cuda(const int sizex, const int sizey, double *w){
     cudaError_t err = cudaSuccess;
 
     err = cudaMalloc((void**)&cuda_data::dev_w,  sizex*sizey*sizeof(double));
@@ -74,10 +73,9 @@ extern "C" bool allocateobjects_cuda(const int sizex, const int sizey, double **
         return false;
     }
 
-    //!!! seg fault ?
-    err=cudaMemcpy(cuda_data::dev_w, w, sizex *sizey * sizeof(double), cudaMemcpyHostToDevice);
+    err=cudaMemcpy(cuda_data::dev_w, w, sizex *sizey * sizeof(double) , cudaMemcpyHostToDevice);
     if (err != cudaSuccess){
-        fprintf(stderr, "correctweight_cuda/cudaMemcpy dev_w returned error %s (code %d), line(%d)\n", cudaGetErrorString(err), err, __LINE__);
+        fprintf(stderr, "allocateobjects_cuda/cudaMemcpy dev_w returned error %s (code %d), line(%d)\n", cudaGetErrorString(err), err, __LINE__);
         freeobjects_cuda();
         return false;
     }
@@ -88,8 +86,7 @@ extern "C" bool allocateobjects_cuda(const int sizex, const int sizey, double **
 
 extern "C" bool setx_cuda(const int sizex, double *x){
     cudaError_t err = cudaSuccess;
-    size_t size = sizex * sizeof(double);
-    err=cudaMemcpy(cuda_data::dev_x, x, size, cudaMemcpyHostToDevice);
+    err=cudaMemcpy(cuda_data::dev_x, x, sizex * sizeof(double), cudaMemcpyHostToDevice);
     if (err != cudaSuccess){
         fprintf(stderr, "setx_cuda/cudaMemcpy dev_x returned error %s (code %d), line(%d)\n", cudaGetErrorString(err), err, __LINE__);
         freeobjects_cuda();
@@ -103,7 +100,7 @@ extern "C" bool setx_cuda(const int sizex, double *x){
 /*!
     Prepare data to calculate on GPU
 */
-extern "C" bool correctweight_cuda(double **w,const int sizex, const int sizey,const int row,const double d){
+extern "C" bool correctweight_cuda(double *w,const int sizex, const int sizey,const int row,const double d){
 
     cudaError_t err = cudaSuccess;
     size_t size = sizex * sizeof(double);    
@@ -122,13 +119,15 @@ extern "C" bool correctweight_cuda(double **w,const int sizex, const int sizey,c
 
     cudaThreadSynchronize();
 
-    err=cudaMemcpy(w[row], &cuda_data::dev_w[row*sizey], size, cudaMemcpyDeviceToHost);
+
+    err=cudaMemcpyAsync(&w[row*sizey], &cuda_data::dev_w[row*sizey], size, cudaMemcpyDeviceToHost);
 
     if (err != cudaSuccess){
         fprintf(stderr, "correctweight_cuda/cudaMemcpy dev_w returned error %s (code %d), line(%d)\n", cudaGetErrorString(err), err, __LINE__);
         freeobjects_cuda();
         return false;
     }
+
 
     return true;
 

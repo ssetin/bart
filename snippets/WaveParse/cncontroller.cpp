@@ -1,6 +1,7 @@
 #include "cncontroller.h"
 #include <sys/types.h>
 #include <dirent.h>
+#include<chrono>
 
 #include<QDebug>
 
@@ -92,6 +93,12 @@ void CNController::TeachAlphabet(string filename){
     \param[in]  path path, where alphabets located
 */
 void CNController::TeachAlphabets(const string path){
+
+    chrono::time_point<chrono::high_resolution_clock> start, end;
+    chrono::duration<double> elapsed;
+
+    start = chrono::high_resolution_clock::now();
+
     DIR *dir = opendir(path.c_str());
     string fname;
     if(dir){
@@ -108,6 +115,12 @@ void CNController::TeachAlphabets(const string path){
     }
 
     closedir(dir);
+
+    end = chrono::high_resolution_clock::now();
+    elapsed = end - start;
+    elapsed=chrono::duration_cast<std::chrono::seconds>(elapsed);
+
+    qDebug()<< "Done in " << elapsed.count()<< " seconds" << endl;
 }
 
 void CNController::LoadSound(const string filename){
@@ -132,7 +145,7 @@ void CNController::LoadWeights(const char *filename){
 
     for(int row=0;row<sizey;row++)
         for(int col=0;col<sizex;col++)
-            fstr>>w[row][col];
+            fstr>>w[row*sizey+col];
 
     fstr.close();
 }
@@ -151,7 +164,7 @@ void CNController::SaveWeights(const char *filename){
 
     for(int row=0;row<sizey;row++){
         for(int col=0;col<sizex;col++)
-            fstr<<w[row][col]<<' ';
+            fstr<<w[row*sizey+col]<<' ';
     }
 
     fstr.close();
@@ -186,7 +199,6 @@ string CNController::Recognize(){
     for(i=0;i<snd.IntervalsCount();i++){
         snd.GetFloatDataFromInterval(i,data);
         res=Process(data);
-        //PrintY();
         result+=GetAnswer(res);
     }
 

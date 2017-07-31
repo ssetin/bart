@@ -42,7 +42,7 @@ CUDA_SDK = "/usr/local/cuda-8.0/samples"    # Path to cuda SDK install
 CUDA_DIR = "/usr/local/cuda-8.0"            # Path to cuda toolkit install
 SYSTEM_NAME = 64                            # Depending on your system either 'Win32', 'x64', or 'Win64'
 SYSTEM_TYPE = 64                            # '32' or '64', depending on your system
-CUDA_ARCH=sm_21                              # Type of CUDA architecture, for example 'compute_10', 'compute_30', 'sm_30'
+CUDA_ARCH=sm_21                             # Type of CUDA architecture, for example 'compute_10', 'compute_30', 'sm_30'
 NVCC_OPTIONS = --use_fast_math
 
 

@@ -20,16 +20,16 @@
 
 enum Activate_Function {AF_THRESH, AF_SIGMA};
 
-extern "C" bool allocateobjects_cuda(const int sizex, const int sizey, double **w);
+extern "C" bool allocateobjects_cuda(const int sizex, const int sizey, double *w);
 extern "C" bool setx_cuda(const int sizex, double* x);
 extern "C" bool freeobjects_cuda();
-extern "C" bool correctweight_cuda(double **w,const int sizex, const int sizey,const int row,const double d);
+extern "C" bool correctweight_cuda(double *w,const int sizex, const int sizey,const int row,const double d);
 
 /*!
     Simple artificial neural network
     sizex - size of input signal vector
     sizey - size of output signal vector
-    w - matrix of weights (rows=sizey cols=sizex)
+    w - matrix(1 dim array) of weights (rows=sizey cols=sizex)
     x - input signal vector
     y - output signal vector
     n - speed of teaching
@@ -40,7 +40,7 @@ extern "C" bool correctweight_cuda(double **w,const int sizex, const int sizey,c
 */
 class NNSimple{
 protected:
-    double **w;
+    double *w;
     double *x;
     double *y;
     double e;
@@ -62,11 +62,16 @@ public:
     NNSimple(Activate_Function nfunce=AF_THRESH, bool tryuse_cuda=USE_CUDA);
     virtual ~NNSimple();
     virtual int Process(double *inputx);
+
     virtual void PrintY(int precision=4);
     virtual void PrintW(int precision=4);
     virtual int  GetY();    
     virtual void SetE(double ne);
     virtual void SetN(double nn);
+
+    virtual double GetW(int col, int row);
+    virtual void SetW(int col, int row, double value);
+
     virtual void SetSensitivity(double ns);
     virtual void Teach(const char *filename, int stepscount);
     virtual void LoadWeights(const char *filename);

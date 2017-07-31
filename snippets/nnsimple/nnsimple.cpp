@@ -39,8 +39,8 @@ NNSimple::NNSimple(Activate_Function nfunc, bool tryuse_cuda){
             printf("cudaGetDeviceProperties returned error %s (code %d), line(%d)\n", cudaGetErrorString(error), error, __LINE__);
             use_cuda=false;
         }else{
-            printf("Using GPU Device %d: \"%s\" with compute capability %d.%d\n", devID, deviceProp.name, deviceProp.major, deviceProp.minor);
-            //printf("maxThreadsPerBlock=%d sharedMemPerBlock=%d totalGlobalMem=%d K\n\n", deviceProp.maxThreadsPerBlock, deviceProp.sharedMemPerBlock,deviceProp.totalGlobalMem/1024);
+            printf("Using GPU Device %d: \"%s\" with compute capability %d.%d\n", devID, deviceProp.name, deviceProp.major, deviceProp.minor);            
+            printf("maxThreadsPerBlock=%d, sharedMemPerBlock=%zu Kb, totalGlobalMem=%zu Kb\n\n", deviceProp.maxThreadsPerBlock, deviceProp.sharedMemPerBlock/1024,deviceProp.totalGlobalMem/1024);
         }
     }
 
@@ -52,20 +52,28 @@ NNSimple::NNSimple(Activate_Function nfunc, bool tryuse_cuda){
 */
 void NNSimple::Init(){
     y=new double[sizey];
-    w=new double*[sizey];
+    w=new double[sizex*sizey];
     srand(time(NULL));
 
-    for(int row=0;row<sizey;row++){
-        w[row]=new double[sizex];
-    }
-    for(int row=0;row<sizey;row++)
-        for(int col=0;col<sizex;col++)
-            w[row][col]=0.0;
+   for(int i=0;i<sizex*sizey;i++)
+            w[i]=0.0;
 
     if(use_cuda){
         if(!allocateobjects_cuda(sizex,sizey,w))
             use_cuda=false;
     }
+}
+
+double NNSimple::GetW(int col, int row){
+    if(w!=NULL && col<sizex && row<sizey)
+        return w[sizey*row+col];
+    else
+        return 0;
+}
+
+void NNSimple::SetW(int col, int row, double value){
+    if(w!=NULL && col<sizex && row<sizey)
+        w[sizey*row+col]=value;
 }
 
 /*!
@@ -146,7 +154,7 @@ void NNSimple::PrintW(int precision){
 
     for(int row=0;row<sizey;row++){
         for(int col=0;col<sizex;col++){
-            cout<<w[row][col]<<'\t';
+            cout<<w[row*sizey+col]<<'\t';
         }
         cout<<endl;
     }
@@ -166,7 +174,7 @@ double NNSimple::AFunction(double nsum){
 void NNSimple::CorrectWeight(int row, double d){
     if(!use_cuda){
         for(int col=0;col<sizex;col++){
-            w[row][col]+=d*x[col];
+            w[row*sizey+col]+=d*x[col];
         }
     }else{
         if(!correctweight_cuda(w,sizex,sizey,row,d)){
@@ -179,9 +187,6 @@ void NNSimple::Clear(){
     if(y!=NULL)
         delete[] y;
     if(w!=NULL){
-        for(int row=0;row<sizey;row++){
-            delete[] w[row];
-        }
         delete[] w;
     }
     sizex=0;
@@ -205,7 +210,7 @@ int NNSimple::Process(double *inputx){
     for(int row=0;row<sizey;row++){
         double sum(0.0);
         for(int col=0;col<sizex;col++){
-            sum+=x[col]*w[row][col];
+            sum+=x[col]*w[row*sizey+col];
         }
         y[row]=AFunction(sum);
     }
@@ -292,7 +297,7 @@ void NNSimple::LoadWeights(const char *filename){
 
     for(int row=0;row<sizey;row++)
         for(int col=0;col<sizex;col++)
-            fstr>>w[row][col];
+            fstr>>w[row*sizey+col];
 
     fstr.close();
 }
@@ -307,7 +312,7 @@ void NNSimple::SaveWeights(const char *filename){
 
     for(int row=0;row<sizey;row++){
         for(int col=0;col<sizex;col++)
-            fstr<<w[row][col]<<' ';
+            fstr<<w[row*sizey+col]<<' ';
     }
 
     fstr.close();

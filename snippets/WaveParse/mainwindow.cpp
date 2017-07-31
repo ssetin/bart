@@ -148,7 +148,7 @@ void MainWindow::on_actionLoad_alphabet_triggered()
 
 
 void MainWindow::on_actionTeach_network_triggered(){
-    CNController cn(AF_SIGMA,true);
+    CNController cn(AF_SIGMA,false);
 
     cn.TeachAlphabets(QString(QDir::currentPath()+"/alphabet").toStdString().c_str());
     cn.SaveWeights(QString(QDir::currentPath()+"/alphabet/result.nw").toStdString().c_str());
