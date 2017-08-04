@@ -20,17 +20,22 @@
 
 enum Activate_Function {AF_THRESH, AF_SIGMA};
 
-extern "C" bool allocateobjects_cuda(const int sizex, const int sizey, double *w);
-extern "C" bool setx_cuda(const int sizex, double* x);
-extern "C" bool freeobjects_cuda();
-extern "C" bool correctweight_cuda(double *w,const int sizex, const int sizey,const int row,const double d);
+extern "C" bool allocatedata_cuda(const int sizex, const int sizey);
+extern "C" bool setconstants_cuda(const double e,const double e0, const double s, const double n);
+extern "C" bool setw_cuda(const int sizex,const int sizey, double *w);
+extern "C" bool getw_cuda(const int sizex,const int sizey, double *w);
+extern "C" bool setx_cuda(const int sizex,const int sizey, double *x);
+extern "C" bool sety_cuda(const int sizey, double *y);
+extern "C" bool teachsigma_cuda(const int stepscount, const int sizex, const int sizey);
+extern "C" void freedata_cuda();
+
 
 /*!
     Simple artificial neural network
     sizex - size of input signal vector
     sizey - size of output signal vector
     w - matrix(1 dim array) of weights (rows=sizey cols=sizex)
-    x - input signal vector
+    x - array of input signal vectors
     y - output signal vector
     n - speed of teaching
     e - inaccuracy
@@ -50,18 +55,20 @@ protected:
     double n;
     bool use_cuda;
     Activate_Function afunction;
-    virtual void CorrectWeight(int row,double d);
+    virtual void CorrectWeight(const int row, const int idx, const double d);
     virtual double AFunction(double nsum);
     virtual int    MaxY();
     virtual double MaxYVal();
-    virtual void TeachThresh(double **voc, int stepscount);
-    virtual void TeachSigma(double **voc, int stepscount);
+    virtual void TeachThresh(int stepscount);
+    virtual void TeachSigma(int stepscount);
     virtual void Init();
-    virtual void Clear();    
+    virtual void Clear();
+    virtual bool CheckCuda();
 public:
     NNSimple(Activate_Function nfunce=AF_THRESH, bool tryuse_cuda=USE_CUDA);
     virtual ~NNSimple();
     virtual int Process(double *inputx);
+    virtual int Process(const int idx);
 
     virtual void PrintY(int precision=4);
     virtual void PrintW(int precision=4);

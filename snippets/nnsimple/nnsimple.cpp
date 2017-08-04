@@ -5,7 +5,6 @@
 #include "nnsimple.h"
 #include <ctime>
 
-
 using namespace std;
 
 NNSimple::NNSimple(Activate_Function nfunc, bool tryuse_cuda){
@@ -19,8 +18,9 @@ NNSimple::NNSimple(Activate_Function nfunc, bool tryuse_cuda){
     y=NULL;
     w=NULL;
     use_cuda=tryuse_cuda;
+}
 
-    //Check CUDA
+bool NNSimple::CheckCuda(){
     if(use_cuda){
         int devID = 0;
         cudaError_t error;
@@ -29,21 +29,25 @@ NNSimple::NNSimple(Activate_Function nfunc, bool tryuse_cuda){
         if (error != cudaSuccess){
             printf("cudaGetDevice returned error %s (code %d), line(%d)\n", cudaGetErrorString(error), error, __LINE__);
             use_cuda=false;
+            return false;
         }
         error = cudaGetDeviceProperties(&deviceProp, devID);
         if (deviceProp.computeMode == cudaComputeModeProhibited){
             printf("Error: device is running in <Compute Mode Prohibited>, no threads can use ::cudaSetDevice().\n");
             use_cuda=false;
+            return false;
         }
         if (error != cudaSuccess){
             printf("cudaGetDeviceProperties returned error %s (code %d), line(%d)\n", cudaGetErrorString(error), error, __LINE__);
             use_cuda=false;
+            return false;
         }else{
-            printf("Using GPU Device %d: \"%s\" with compute capability %d.%d\n", devID, deviceProp.name, deviceProp.major, deviceProp.minor);            
+            printf("Using GPU Device %d: \"%s\" with compute capability %d.%d\n", devID, deviceProp.name, deviceProp.major, deviceProp.minor);
             printf("maxThreadsPerBlock=%d, sharedMemPerBlock=%zu Kb, totalGlobalMem=%zu Kb\n\n", deviceProp.maxThreadsPerBlock, deviceProp.sharedMemPerBlock/1024,deviceProp.totalGlobalMem/1024);
         }
+        return true;
     }
-
+    return false;
 }
 
 /*!
@@ -53,15 +57,11 @@ NNSimple::NNSimple(Activate_Function nfunc, bool tryuse_cuda){
 void NNSimple::Init(){
     y=new double[sizey];
     w=new double[sizex*sizey];
+    x=new double[sizex*sizey];
     srand(time(NULL));
 
    for(int i=0;i<sizex*sizey;i++)
             w[i]=0.0;
-
-    if(use_cuda){
-        if(!allocateobjects_cuda(sizex,sizey,w))
-            use_cuda=false;
-    }
 }
 
 double NNSimple::GetW(int col, int row){
@@ -170,16 +170,15 @@ double NNSimple::AFunction(double nsum){
     return 1.0/(1.0+pow(M_E,-nsum));
 }
 
-
-void NNSimple::CorrectWeight(int row, double d){
-    if(!use_cuda){
-        for(int col=0;col<sizex;col++){
-            w[row*sizey+col]+=d*x[col];
-        }
-    }else{
-        if(!correctweight_cuda(w,sizex,sizey,row,d)){
-            use_cuda=false;
-        }
+/*!
+    Correct matrix weights for input vector
+    \param[in] row - matrix row
+    \param[in] idx - number of input vector
+    \param[in] d   - koeff
+*/
+void NNSimple::CorrectWeight(const int row, const int idx, const double d){
+    for(int col=0;col<sizex;col++){
+        w[row*sizey+col]+=d*x[sizex*idx+col];
     }
 }
 
@@ -189,28 +188,39 @@ void NNSimple::Clear(){
     if(w!=NULL){
         delete[] w;
     }
+    if(x!=NULL){
+        delete[] x;
+    }
     sizex=0;
     sizey=0;
-    if(use_cuda){
-        freeobjects_cuda();
-    }
 }
 
 NNSimple::~NNSimple(){
     Clear();
 }
 
-
-int NNSimple::Process(double *inputx){
-    if(inputx==NULL) return -1;
-    x=inputx;
-    if(use_cuda)
-        setx_cuda(sizex, x);
+int NNSimple::Process(const int idx){
+    if(x==NULL) return -1;
 
     for(int row=0;row<sizey;row++){
         double sum(0.0);
         for(int col=0;col<sizex;col++){
-            sum+=x[col]*w[row*sizey+col];
+            sum+=x[sizex*idx+col]*w[row*sizey+col];
+        }
+        y[row]=AFunction(sum);
+    }
+    int res(MaxY());
+    return y[res]>s?res:-1;
+}
+
+
+int NNSimple::Process(double *inputx){
+    if(inputx==NULL) return -1;
+
+    for(int row=0;row<sizey;row++){
+        double sum(0.0);
+        for(int col=0;col<sizex;col++){
+            sum+=inputx[col]*w[row*sizey+col];
         }
         y[row]=AFunction(sum);
     }
@@ -226,7 +236,7 @@ int NNSimple::Process(double *inputx){
     \param[in]  voc         input vectors
     \param[in]  stepscount  count of iterations
 */
-void NNSimple::TeachThresh(double **voc, int stepscount){
+void NNSimple::TeachThresh(int stepscount){
     int row(0), step(0);
     int steps(stepscount), ind(0);
     double d(0.0), T(0.0);
@@ -234,13 +244,13 @@ void NNSimple::TeachThresh(double **voc, int stepscount){
 
     for(step=0;step<steps;step++){
           ind=rand()%sizey;
-          Process(voc[ind]);
+          Process(ind);
           for(row=0;row<sizey;row++){
               if(ind==row)
                   T=1.0;
               else T=0.0;
               d=T-y[row];
-              CorrectWeight(row,d);
+              CorrectWeight(row,ind,d);
           }
     }
 }
@@ -255,7 +265,7 @@ void NNSimple::TeachThresh(double **voc, int stepscount){
     \param[in]  voc         input vectors
     \param[in]  stepscount  count of iterations
 */
-void NNSimple::TeachSigma(double **voc, int stepscount){
+void NNSimple::TeachSigma(int stepscount){
     int row(0), step(0);
     int steps(stepscount), ind(0);
     double d(1.0), T(0.0),currente(0.0);
@@ -263,7 +273,7 @@ void NNSimple::TeachSigma(double **voc, int stepscount){
 
     for(step=0;step<steps;step++){
           ind=rand()%sizey;
-          Process(voc[ind]);
+          Process(ind);
           //cout<<"step="<<step<<endl;
 
           for(row=0;row<sizey;row++){
@@ -277,8 +287,8 @@ void NNSimple::TeachSigma(double **voc, int stepscount){
                     if(fabs(d)<=e0){
                         break;
                     }
-                    CorrectWeight(row,d*n);
-                    Process(voc[ind]);                    
+                    CorrectWeight(row,ind,d*n);
+                    Process(ind);
                 }
           }
     }
@@ -324,7 +334,6 @@ void NNSimple::SaveWeights(const char *filename){
     \param[in]  stepscount  count of iterations
 */
 void NNSimple::Teach(const char *filename, int stepscount){
-    int row(0), col(0);
     ifstream fstr(filename);
 
     if(!fstr.is_open()){
@@ -332,27 +341,35 @@ void NNSimple::Teach(const char *filename, int stepscount){
         return;
     }
 
-    double **voc=NULL;
     fstr>>sizex>>sizey;
     Init();
 
-    voc=new double*[sizey];
+    for(int i=0;i<sizex*sizey;i++)
+        fstr>>x[i];
 
-    for(row=0;row<sizey;row++)
-        voc[row]=new double[sizex];
-
-    for(row=0;row<sizey;row++)
-        for(col=0;col<sizex;col++)
-            fstr>>voc[row][col];
     fstr.close();
 
-    if(afunction==AF_THRESH)
-        TeachThresh(voc,stepscount);
-    else
-        TeachSigma(voc,stepscount);
+    if(CheckCuda()){
+        allocatedata_cuda(sizex,sizey);
 
-    for(row=0;row<sizey;row++){
-        delete[] voc[row];
+        setconstants_cuda(e, e0, s, n);
+        setw_cuda(sizex, sizey, w);
+        setx_cuda(sizex, sizey, x);
+        sety_cuda(sizey, y);
+
+        teachsigma_cuda(stepscount, sizex, sizey);
+
+        getw_cuda(sizex, sizey, w);
+
+        freedata_cuda();
+    } else {
+
+        if(afunction==AF_THRESH)
+            TeachThresh(stepscount);
+        else
+            TeachSigma(stepscount);
+
     }
-    delete[] voc;
+
+
 }

@@ -1,14 +1,26 @@
 #include <iostream>
 #include <nnsimple.h>
+#include <chrono>
 
 using namespace std;
 
 int main()
 {
-    NNSimple nn(AF_SIGMA);
+    NNSimple nn(AF_SIGMA,true);
     cout<<"Teaching..."<<endl;
+
+    chrono::time_point<chrono::high_resolution_clock> start, end;
+    chrono::duration<double> elapsed;
+
+    start = chrono::high_resolution_clock::now();
+
     nn.Teach("teach.txt",10000);
-    cout<<"Done"<<endl;
+
+    end = chrono::high_resolution_clock::now();
+    elapsed = end - start;
+
+    cout<< "Done in " << elapsed.count()<< " seconds" << endl;
+
 
     /*
         input signal - digits (0..9) in 3x5 field
@@ -32,10 +44,7 @@ int main()
     cout<<"noise 4 -> "<<nn.Process(b4)<<endl;
     nn.PrintY();
 
-    //nn.PrintW(2);
-    //cout<<"w[0,1]="<<nn.w[0][1]<<endl;
-    //cout<<"w[1,1]="<<nn.w[1][1]<<endl;
-
     cout << "End!" << endl;
-    return 0;
+    exit(0);
+    //return 0;
 }
