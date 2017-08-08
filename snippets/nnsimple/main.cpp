@@ -9,6 +9,7 @@ int main()
     NNSimple nn(AF_SIGMA,true);
     cout<<"Teaching..."<<endl;
 
+
     chrono::time_point<chrono::high_resolution_clock> start, end;
     chrono::duration<double> elapsed;
 

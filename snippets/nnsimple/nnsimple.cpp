@@ -10,7 +10,7 @@ using namespace std;
 NNSimple::NNSimple(Activate_Function nfunc, bool tryuse_cuda){
     n=0.5;
     s=0.6;
-    e=0.001;
+    e=0.0001;
     e0=1e-5;
     afunction=nfunc;
     sizex=0;
@@ -273,18 +273,20 @@ void NNSimple::TeachSigma(int stepscount){
 
     for(step=0;step<steps;step++){
           ind=rand()%sizey;
-          Process(ind);
-          //cout<<"step="<<step<<endl;
+          if(step%(stepscount/10)==0)
+              cout<<step<<" of "<<stepscount<<endl;
+          Process(ind);          
 
           for(row=0;row<sizey;row++){
                 if(ind==row)
                     T=1.0;
                 else T=0.0;
 
+
                 while((currente=0.5*((T-y[row])*(T-y[row])))>e){
                     d=n * (T-y[row]) * y[row] * (1.0-y[row]);
 
-                    if(fabs(d)<=e0){
+                    if(abs(d)<=e0){
                         break;
                     }
                     CorrectWeight(row,ind,d*n);
@@ -350,18 +352,16 @@ void NNSimple::Teach(const char *filename, int stepscount){
     fstr.close();
 
     if(CheckCuda()){
-        allocatedata_cuda(sizex,sizey);
+        if(allocatedata_cuda(sizex, sizey)){
 
-        setconstants_cuda(e, e0, s, n);
-        setw_cuda(sizex, sizey, w);
-        setx_cuda(sizex, sizey, x);
-        sety_cuda(sizey, y);
+            setw_cuda(sizex, sizey, w);
+            setx_cuda(sizex, sizey, x);
 
-        teachsigma_cuda(stepscount, sizex, sizey);
+            if(teachsigma_cuda(stepscount, sizex, sizey, y, n, e, e0))
+                getw_cuda(sizex, sizey, w);
 
-        getw_cuda(sizex, sizey, w);
-
-        freedata_cuda();
+            freedata_cuda();
+        }
     } else {
 
         if(afunction==AF_THRESH)

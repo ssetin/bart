@@ -3,22 +3,15 @@
 #include <helper_cuda.h>
 
 
-const int BLOCK_SIZE=256;
+const int BLOCK_SIZE=16;
 
 /*!
     vectors for processing in gpu memory
 */
 namespace device_data{
-    double *w;
-    double *x;
-    double *y;
-
-    __device__ double e;
-    __device__ double e0;
-    __device__ double s;
-    __device__ int sizex;
-    __device__ int sizey;
-    __device__ double n;
+    double *w=NULL;
+    double *x=NULL;
+    double *y=NULL;
 }
 
 /*!
@@ -28,6 +21,9 @@ extern "C" void freedata_cuda(){
     cudaFree(device_data::x);
     cudaFree(device_data::w);
     cudaFree(device_data::y);
+    device_data::x=NULL;
+    device_data::y=NULL;
+    device_data::w=NULL;
 }
 
 
@@ -58,18 +54,6 @@ extern "C" bool allocatedata_cuda(const int sizex, const int sizey){
         return false;
     }
 
-    cudaMemcpyToSymbol((const void*)&device_data::sizex,(void*)&sizex, sizeof(int));
-    cudaMemcpyToSymbol((const void*)&device_data::sizey,(void*)&sizey, sizeof(int));
-
-    return true;
-}
-
-
-extern "C" bool setconstants_cuda(const double e,const double e0, const double s, const double n){   
-    cudaMemcpyToSymbol((const void*)&device_data::e,(void*)&e, sizeof(double));
-    cudaMemcpyToSymbol((const void*)&device_data::e0,(void*)&e0, sizeof(double));
-    cudaMemcpyToSymbol((const void*)&device_data::s,(void*)&s, sizeof(double));
-    cudaMemcpyToSymbol((const void*)&device_data::n,(void*)&n, sizeof(double));
     return true;
 }
 
@@ -106,18 +90,6 @@ extern "C" bool setx_cuda(const int sizex,const int sizey, double *x){
     return true;
 }
 
-extern "C" bool sety_cuda(const int sizey, double *y){
-    cudaError_t err = cudaSuccess;
-    err=cudaMemcpy(device_data::y, y, sizey * sizeof(double), cudaMemcpyHostToDevice);
-    if (err != cudaSuccess){
-        fprintf(stderr, "sety_cuda/cudaMemcpy y returned error %s (code %d), line(%d)\n", cudaGetErrorString(err), err, __LINE__);
-        freedata_cuda();
-        return false;
-    }
-    return true;
-}
-
-
 /*!
     CUDA Kernel Device code
     for(int col=0;col<sizex;col++){
@@ -125,14 +97,14 @@ extern "C" bool sety_cuda(const int sizey, double *y){
     }
     w[row*sizey+idx]+=d*x[idx];
 */
-__global__ void correctweight_cuda(const int row, const int idx,const double d, double *x, double *w){
-    int i = blockDim.x * blockIdx.x + threadIdx.x;
+__global__ void correctweight_cuda(const int row, const int idx, const int sizex, const int sizey,const double d, double *x, double *w){
+    const int col = blockDim.x * blockIdx.x + threadIdx.x;
     __shared__ double shared_w[BLOCK_SIZE];
     __shared__ double shared_x[BLOCK_SIZE];
 
-    if(i<device_data::sizex){
-        shared_x[threadIdx.x]=x[idx*device_data::sizex+i];
-        shared_w[threadIdx.x]=w[row*device_data::sizey+i];
+    if(col<sizex){
+        shared_x[threadIdx.x]=x[idx*sizex+col];
+        shared_w[threadIdx.x]=w[row*sizey+col];
 
         __syncthreads();
 
@@ -140,94 +112,146 @@ __global__ void correctweight_cuda(const int row, const int idx,const double d, 
 
         __syncthreads();
 
-        w[row*device_data::sizey+i]=shared_w[threadIdx.x];
-    }
-}
-
-
-__device__ void process_cuda(const int idx, double *x, double *y, double *w){
-    for(int row=0;row<device_data::sizey;row++){
-        double sum(0.0);
-        for(int col=0;col<device_data::sizex;col++){
-            sum+=x[device_data::sizex*idx+col]*w[row*device_data::sizey+col];
-        }
-        y[row]=1.0/(1.0+pow(M_E,-sum));
-    }
-}
-
-__device__ void correctweight_cuda_2(const int row, const int idx, const double d, double *x, double *w){
-    for(int col=0;col<device_data::sizex;col++){
-        w[row*device_data::sizey+col]+=d*x[device_data::sizex*idx+col];
+        w[row*sizey+col]=shared_w[threadIdx.x];
     }
 }
 
 /*!
-    CUDA Kernel Device code
-    for(row=0;row<sizey;row++){
-        if(ind==row)
-            T=1.0;
-            else T=0.0;
-
-        while((currente=0.5*((T-y[row])*(T-y[row])))>e){
-            d=n * (T-y[row]) * y[row] * (1.0-y[row]);
-
-            if(fabs(d)<=e0){
-                break;
-            }
-            CorrectWeight(row,ind,d*n);
-            process_cuda(ind);
+        for(int row=0;row<sizey;row++){
+            double sum(0.0);
+            for(int col=0;col<sizex;col++){
+                sum+=x[col]*w[row*sizey+col];
         }
-    }
-
+        y[row]=AFunction(sum);
+}
 */
-__global__ void correctmatrix_cuda(const int ind, double *x, double *y, double *w){
-    double d(1.0), T(0.0);
+__global__ void process_cuda(const int idx, const int sizex, const int sizey, double *x, double *y, double *w){
+    const int row = blockDim.y * blockIdx.y + threadIdx.y;
 
-    int row = blockDim.x * blockIdx.x + threadIdx.x;
-    int col = blockDim.y * blockIdx.y + threadIdx.y;
-
-    if(row<device_data::sizey){
-
-        if(row==0)
-            process_cuda(ind,x,y,w);
-
-        if(ind==row)
-            T=1.0;
-        else
-            T=0.0;
-
-
-        while(0.5*((T-y[row])*(T-y[row])) > device_data::e){
-            d = device_data::n * (T-y[row]) * y[row] * (1.0-y[row]);
-
-            if(fabs(d)<=device_data::e0){
-                break;
-            }
-            correctweight_cuda_2(row,ind,d*device_data::n,x,w);
-            process_cuda(ind,x,y,w);
+    if(row<sizey){
+        double sum(0.0);
+        for(int col=0;col<sizex;col++){
+            sum+=x[sizex*idx+col]*w[row*sizey+col];
         }
 
-
+        y[row]=1.0/(1.0+pow(M_E,-sum));
     }
 
+}
+
+/*!
+        for(int row=0;row<sizey;row++){
+            double sum(0.0);
+            for(int col=0;col<sizex;col++){
+                sum+=x[col]*w[row*sizey+col];
+        }
+        y[row]=AFunction(sum);
+}
+*/
+__global__ void process_cuda_row(const int idx, const int row, const int sizex, const int sizey, double *x, double *y, double *w){
+    const int col = blockDim.x * blockIdx.x + threadIdx.x;
+    __shared__ double shared_w[BLOCK_SIZE];
+    __shared__ double shared_x[BLOCK_SIZE];
+
+    if(col==0){
+        y[row]=0;
+    }
+
+    if(col<sizex){
+        shared_x[threadIdx.x]=x[idx*sizex+col];
+        shared_w[threadIdx.x]=w[row*sizey+col];
+        __syncthreads();
+
+        shared_w[threadIdx.x]=shared_x[threadIdx.x]*shared_w[threadIdx.x];
+        __syncthreads();
+
+        for(int s=1;s<blockDim.x;s<<=1){
+            int  index = 2 * s * threadIdx.x;
+            if ( index < blockDim.x )
+                shared_w[index]+=shared_w[index + s];
+            __syncthreads ();
+        }
+
+        if(threadIdx.x==0)
+            y[row]+=shared_w[0];
+
+    }
+    if(col==0)
+        y[row]=1.0/(1.0+pow(M_E,-y[row]));
 
 }
 
 
-extern "C" bool teachsigma_cuda(const int stepscount, const int sizex, const int sizey){
+extern "C" bool teachsigma_cuda(const int stepscount, const int sizex, const int sizey, double *y,
+        double n, double e, double e0){
     int step(0);
+    double T(0.0), d(0.0);
     int ind(0);
+
+    cudaError_t err = cudaSuccess;
+    dim3 threadsPerBlock;
+    dim3 blocksPerGrid;
 
     srand(time(NULL));
 
     for(step=0;step<stepscount;step++){
           ind=rand()%sizey;
 
-          dim3 threadsPerBlock(sizey,1);
-          dim3 blocksPerGrid(1,1);
+          if(step%(stepscount/10)==0)
+              printf("%d of %d\n", step, stepscount);
 
-          correctmatrix_cuda<<<blocksPerGrid, threadsPerBlock>>>(ind,device_data::x,device_data::y,device_data::w);
+          threadsPerBlock.x=1;
+          threadsPerBlock.y=BLOCK_SIZE;
+          blocksPerGrid.x=1;
+          blocksPerGrid.y=sizey / BLOCK_SIZE + 1;
+          process_cuda<<<blocksPerGrid, threadsPerBlock>>>(ind, sizex, sizey, device_data::x,device_data::y,device_data::w);
           cudaThreadSynchronize();
+          cudaMemcpy(y, device_data::y, sizey*sizeof(double), cudaMemcpyDeviceToHost);
+
+          err=cudaGetLastError();
+          if (err != cudaSuccess){
+                fprintf(stderr, "process_cuda (error code %s)!\n", cudaGetErrorString(err));
+                return false;
+          }
+
+          for(int row=0;row<sizey;row++){
+                if(ind==row)
+                    T=1.0;
+                else T=0.0;
+
+                while(0.5*((T-y[row])*(T-y[row]))>e){
+                    d=n * (T-y[row]) * y[row] * (1.0-y[row]);
+                    if(abs(d)<=e0){
+                        break;
+                    }
+                    threadsPerBlock.x=BLOCK_SIZE;
+                    threadsPerBlock.y=1;
+                    blocksPerGrid.x=sizex / BLOCK_SIZE + 1;
+                    blocksPerGrid.y=1;
+                    correctweight_cuda<<<blocksPerGrid, threadsPerBlock>>>(row,ind,sizex,sizey,d,device_data::x, device_data::w);
+                    err=cudaGetLastError();
+                    if (err != cudaSuccess){
+                          fprintf(stderr, "correctweight_cuda (error code %s)!\n", cudaGetErrorString(err));
+                          return false;
+                    }
+                    cudaThreadSynchronize();
+
+                    threadsPerBlock.x=BLOCK_SIZE;
+                    threadsPerBlock.y=1;
+                    blocksPerGrid.x=sizex / BLOCK_SIZE + 1;
+                    blocksPerGrid.y=1;
+                    process_cuda_row<<<blocksPerGrid, threadsPerBlock>>>(ind, row, sizex, sizey, device_data::x,device_data::y,device_data::w);
+                    err=cudaGetLastError();
+                    if (err != cudaSuccess){
+                          fprintf(stderr, "process_cuda_row (error code %s)!\n", cudaGetErrorString(err));
+                          return false;
+                    }
+                    cudaThreadSynchronize();
+                    cudaMemcpy(&y[row],(const void*)&device_data::y[row], sizeof(double), cudaMemcpyDeviceToHost);
+                }
+          }
+
+
     }
 
     return true;

@@ -7,7 +7,7 @@
 */
 
 #include <iostream>
-#include <math.h>
+#include <cmath>
 #include <fstream>
 
 #include <cuda_runtime.h>
@@ -21,12 +21,10 @@
 enum Activate_Function {AF_THRESH, AF_SIGMA};
 
 extern "C" bool allocatedata_cuda(const int sizex, const int sizey);
-extern "C" bool setconstants_cuda(const double e,const double e0, const double s, const double n);
 extern "C" bool setw_cuda(const int sizex,const int sizey, double *w);
 extern "C" bool getw_cuda(const int sizex,const int sizey, double *w);
 extern "C" bool setx_cuda(const int sizex,const int sizey, double *x);
-extern "C" bool sety_cuda(const int sizey, double *y);
-extern "C" bool teachsigma_cuda(const int stepscount, const int sizex, const int sizey);
+extern "C" bool teachsigma_cuda(const int stepscount, const int sizex, const int sizey, double *y,double n, double e, double e0);
 extern "C" void freedata_cuda();
 
 
