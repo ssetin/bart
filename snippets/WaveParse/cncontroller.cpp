@@ -101,6 +101,10 @@ void CNController::TeachAlphabets(const string path){
     qDebug()<< "Done in " << elapsed.count()<< " seconds" << endl;
 }
 
+/*!
+    Load sound data from wave file
+    \param[in]  filename    file name
+*/
 void CNController::LoadSound(const string filename){
     snd.LoadFromFile(filename.c_str());
     //snd.Normalize();
@@ -148,6 +152,10 @@ void CNController::SaveWeights(const char *filename){
     fstr.close();
 }
 
+/*!
+    Get the real answer according to alphabet
+    \param[in]  idx    index of element in alphabet
+*/
 string CNController::GetAnswer(int idx){
     string res(" ");
     if(sAlphabet && idx>=0)
@@ -155,7 +163,9 @@ string CNController::GetAnswer(int idx){
     return res;
 }
 
-
+/*!
+    Recognize signals from loaded file
+*/
 string CNController::Recognize(){
     unsigned int i(0), size(0), res(-1);
     string result("");

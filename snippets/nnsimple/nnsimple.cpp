@@ -7,6 +7,11 @@
 
 using namespace std;
 
+/*!
+    Constructor
+    \param[in]  nfunc activation function
+    \param[in]  tryuse_cuda try to make calculations with CUDA
+*/
 NNSimple::NNSimple(Activate_Function nfunc, bool tryuse_cuda){
     n=0.5;
     s=0.6;
@@ -15,11 +20,15 @@ NNSimple::NNSimple(Activate_Function nfunc, bool tryuse_cuda){
     afunction=nfunc;
     sizex=0;
     sizey=0;
+    x=NULL;
     y=NULL;
     w=NULL;
     use_cuda=tryuse_cuda;
 }
 
+/*!
+    Check posibilities to work with CUDA
+*/
 bool NNSimple::CheckCuda(){
     if(use_cuda){
         int devID = 0;
@@ -100,6 +109,10 @@ void NNSimple::SetSensitivity(double ns){
     s=ns;
 }
 
+/*!
+    Get output number with maximum signal
+    \param[in]  precision    precision
+*/
 int NNSimple::MaxY(){
     int ind=0;
     double max(y[0]);
@@ -139,9 +152,12 @@ int NNSimple::GetY(){
         }
     }
     return res;
-
 }
 
+/*!
+    Print output vector
+    \param[in]  precision    precision
+*/
 void NNSimple::PrintY(int precision){
     cout.precision(precision);
     for(int i=0;i<sizey;i++){
@@ -149,6 +165,10 @@ void NNSimple::PrintY(int precision){
     }
 }
 
+/*!
+    Print the matrix of weights
+    \param[in]  precision    precision
+*/
 void NNSimple::PrintW(int precision){
     cout.precision(precision);
 
@@ -195,10 +215,17 @@ void NNSimple::Clear(){
     sizey=0;
 }
 
+
 NNSimple::~NNSimple(){
     Clear();
 }
 
+
+/*!
+    Calculate output vector
+    \param[in]  idx    Number of the input vector in the training sample
+    \param[out] output number with maximum signal
+*/
 int NNSimple::Process(const int idx){
     if(x==NULL) return -1;
 
@@ -213,7 +240,11 @@ int NNSimple::Process(const int idx){
     return y[res]>s?res:-1;
 }
 
-
+/*!
+    Calculate output vector
+    \param[in]  inputx         input vector
+    \param[out] output number with maximum signal
+*/
 int NNSimple::Process(double *inputx){
     if(inputx==NULL) return -1;
 
@@ -281,7 +312,6 @@ void NNSimple::TeachSigma(int stepscount){
                 if(ind==row)
                     T=1.0;
                 else T=0.0;
-
 
                 while((currente=0.5*((T-y[row])*(T-y[row])))>e){
                     d=n * (T-y[row]) * y[row] * (1.0-y[row]);
