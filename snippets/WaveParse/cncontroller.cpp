@@ -1,14 +1,14 @@
 #include "cncontroller.h"
 #include <sys/types.h>
 #include <dirent.h>
-#include<chrono>
+#include <chrono>
 
 #include<QDebug>
 
 CNController::CNController(Activate_Function nfunce, bool tryuse_cuda): NNSimple(nfunce, tryuse_cuda){
-    n= 0.5;
-    s= 0.5;
-    e= 0.01;
+    n=0.5;
+    s=0.6;
+    e=0.001;
     e0=1e-5;
     sAlphabet=nullptr;
 }
@@ -17,48 +17,6 @@ CNController::CNController(Activate_Function nfunce, bool tryuse_cuda): NNSimple
 CNController::~CNController(){
     if(sAlphabet)
         delete[] sAlphabet;
-}
-
-/*!
-    Delta rule with sigma function
-    e = 0.5 (T-Y)(T-Y)
-    δ = (T - Y)
-    f' = Y (1-Y)
-    Δi = η δ f' xi
-    w(n+1) = w(n) + Δi
-    \param[in]  voc         input vectors
-    \param[in]  stepscount  count of iterations
-*/
-void CNController::TeachSigma(CSoundInterval *voc, int stepscount){
-    int row(0), step(0);
-    int steps(stepscount), ind(0);
-    double d(1.0), T(0.0);
-    srand(time(NULL));
-
-
-    for(step=0;step<steps;step++){
-          ind=rand()%sizey;
-          if(step%(stepscount/100)==0)
-              qDebug()<<step<<" of "<<stepscount;
-
-          Process(voc[ind].data);
-
-          for(row=0;row<sizey;row++){
-                if(ind==row)
-                    T=1.0;
-                else T=0.0;
-
-                while(0.5*((T-y[row])*(T-y[row]))>e){
-                    d=n*(T-y[row]) * y[row] * (1.0-y[row]);
-                    if(abs(d)<=e0){
-                        break;
-                    }
-                    //qDebug()<<"d="<<d<<" j="<<j<<" y[j]="<<y[j]<<" T="<<T;
-                    CorrectWeight(row,d*n);
-                    Process(voc[ind].data);                    
-                }
-          }
-    }
 }
 
 /*!
@@ -80,9 +38,29 @@ void CNController::TeachAlphabet(string filename){
         sAlphabet[row]=snd.GetIntervals()[row].ch;
 
     sizex=snd.SamplesPerInterval();
+
     Init();
 
-    TeachSigma(snd.GetIntervals(),stepscount);
+    for(unsigned int i=0;i<snd.IntervalsCount();i++){
+        CSoundInterval *voc=snd.GetIntervals();
+        for(int j=0;j<sizex;j++)
+            x[i*snd.IntervalsCount()+j]=voc[i].data[j];
+    }
+
+    if(CheckCuda()){
+        if(allocatedata_cuda(sizex, sizey)){
+
+            setw_cuda(sizex, sizey, w);
+            setx_cuda(sizex, sizey, x);
+
+            if(teachsigma_cuda(stepscount, sizex, sizey, y, n, e, e0))
+                getw_cuda(sizex, sizey, w);
+
+            freedata_cuda();
+        }
+    } else {
+        TeachSigma(stepscount);
+    }
 
     qDebug()<<"teach "<<filename.c_str()<<" done.";
 }

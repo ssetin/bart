@@ -3,7 +3,7 @@
 #include <helper_cuda.h>
 
 
-const int BLOCK_SIZE=16;
+const int BLOCK_SIZE=256;
 
 /*!
     vectors for processing in gpu memory
@@ -25,6 +25,23 @@ extern "C" void freedata_cuda(){
     device_data::y=NULL;
     device_data::w=NULL;
 }
+
+
+#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
+#else
+__device__ double atomicAdd(double* address, double val)
+{
+    unsigned long long int* address_as_ull = (unsigned long long int*)address;
+    unsigned long long int old = *address_as_ull, assumed;
+    do {
+        assumed = old;
+        old = atomicCAS(address_as_ull, assumed,
+                        __double_as_longlong(val +
+                        __longlong_as_double(assumed)));
+    } while (assumed != old);
+    return __longlong_as_double(old);
+}
+#endif
 
 
 /*!
@@ -117,12 +134,13 @@ __global__ void correctweight_cuda(const int row, const int idx, const int sizex
 }
 
 /*!
-        for(int row=0;row<sizey;row++){
-            double sum(0.0);
-            for(int col=0;col<sizex;col++){
-                sum+=x[col]*w[row*sizey+col];
+    for(int row=0;row<sizey;row++){
+        double sum(0.0);
+        for(int col=0;col<sizex;col++){
+            sum+=x[sizex*idx+col]*w[row*sizey+col];
         }
         y[row]=AFunction(sum);
+    }
 }
 */
 __global__ void process_cuda(const int idx, const int sizex, const int sizey, double *x, double *y, double *w){
@@ -136,26 +154,23 @@ __global__ void process_cuda(const int idx, const int sizex, const int sizey, do
 
         y[row]=1.0/(1.0+pow(M_E,-sum));
     }
-
 }
 
+
 /*!
-        for(int row=0;row<sizey;row++){
-            double sum(0.0);
-            for(int col=0;col<sizex;col++){
-                sum+=x[col]*w[row*sizey+col];
+    for(int row=0;row<sizey;row++){
+        double sum(0.0);
+        for(int col=0;col<sizex;col++){
+            sum+=x[sizex*idx+col]*w[row*sizey+col];
         }
         y[row]=AFunction(sum);
+    }
 }
 */
 __global__ void process_cuda_row(const int idx, const int row, const int sizex, const int sizey, double *x, double *y, double *w){
     const int col = blockDim.x * blockIdx.x + threadIdx.x;
     __shared__ double shared_w[BLOCK_SIZE];
     __shared__ double shared_x[BLOCK_SIZE];
-
-    if(col==0){
-        y[row]=0;
-    }
 
     if(col<sizex){
         shared_x[threadIdx.x]=x[idx*sizex+col];
@@ -169,16 +184,12 @@ __global__ void process_cuda_row(const int idx, const int row, const int sizex, 
             int  index = 2 * s * threadIdx.x;
             if ( index < blockDim.x )
                 shared_w[index]+=shared_w[index + s];
-            __syncthreads ();
+            __syncthreads();
         }
 
         if(threadIdx.x==0)
-            y[row]+=shared_w[0];
-
+            atomicAdd(&y[row], shared_w[0]);
     }
-    if(col==0)
-        y[row]=1.0/(1.0+pow(M_E,-y[row]));
-
 }
 
 
@@ -204,6 +215,7 @@ extern "C" bool teachsigma_cuda(const int stepscount, const int sizex, const int
           threadsPerBlock.y=BLOCK_SIZE;
           blocksPerGrid.x=1;
           blocksPerGrid.y=sizey / BLOCK_SIZE + 1;
+
           process_cuda<<<blocksPerGrid, threadsPerBlock>>>(ind, sizex, sizey, device_data::x,device_data::y,device_data::w);
           cudaThreadSynchronize();
           cudaMemcpy(y, device_data::y, sizey*sizeof(double), cudaMemcpyDeviceToHost);
@@ -226,7 +238,7 @@ extern "C" bool teachsigma_cuda(const int stepscount, const int sizex, const int
                     }
                     threadsPerBlock.x=BLOCK_SIZE;
                     threadsPerBlock.y=1;
-                    blocksPerGrid.x=sizex / BLOCK_SIZE + 1;
+                    blocksPerGrid.x=sizex / BLOCK_SIZE + 1;;
                     blocksPerGrid.y=1;
                     correctweight_cuda<<<blocksPerGrid, threadsPerBlock>>>(row,ind,sizex,sizey,d,device_data::x, device_data::w);
                     err=cudaGetLastError();
@@ -238,8 +250,9 @@ extern "C" bool teachsigma_cuda(const int stepscount, const int sizex, const int
 
                     threadsPerBlock.x=BLOCK_SIZE;
                     threadsPerBlock.y=1;
-                    blocksPerGrid.x=sizex / BLOCK_SIZE + 1;
+                    blocksPerGrid.x=sizex / BLOCK_SIZE + 1;;
                     blocksPerGrid.y=1;
+                    y[row]=0.0;
                     process_cuda_row<<<blocksPerGrid, threadsPerBlock>>>(ind, row, sizex, sizey, device_data::x,device_data::y,device_data::w);
                     err=cudaGetLastError();
                     if (err != cudaSuccess){
@@ -248,6 +261,7 @@ extern "C" bool teachsigma_cuda(const int stepscount, const int sizex, const int
                     }
                     cudaThreadSynchronize();
                     cudaMemcpy(&y[row],(const void*)&device_data::y[row], sizeof(double), cudaMemcpyDeviceToHost);
+                    y[row]=1.0/(1.0+pow(M_E,-y[row]));
                 }
           }
 

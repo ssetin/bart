@@ -18,7 +18,6 @@ protected:
     CCharSound snd;
     string *sAlphabet;    
     virtual string GetAnswer(int idx);
-    virtual void TeachSigma(CSoundInterval *voc, int stepscount);
 public:
     CNController()=delete;
     CNController(Activate_Function nfunce=AF_SIGMA,bool tryuse_cuda=true);

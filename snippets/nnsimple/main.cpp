@@ -6,7 +6,7 @@ using namespace std;
 
 int main()
 {
-    NNSimple nn(AF_SIGMA,true);
+    NNSimple nn(AF_SIGMA, true);
     cout<<"Teaching..."<<endl;
 
 
@@ -44,6 +44,7 @@ int main()
     nn.PrintY();
     cout<<"noise 4 -> "<<nn.Process(b4)<<endl;
     nn.PrintY();
+
 
     cout << "End!" << endl;
     exit(0);
